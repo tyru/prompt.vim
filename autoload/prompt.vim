@@ -286,19 +286,19 @@ endfunc
 " }}}
 " s:Queue.execute {{{
 func! s:Queue.execute(command)
-    execute a:command remove(self.queue, 0)
+    execute a:command "remove(self.queue, 0)"
 endfunc
 " }}}
 " s:Queue.execute_all {{{
 func! s:Queue.execute_all(command)
     for i in self.queue
-        execute a:command i
+        execute a:command "i"
     endfor
     let self.queue = []
 endfunc
 " }}}
-" s:Queue.join_execute {{{
-func! s:Queue.join_execute(command) dict
+" s:Queue.join_execute_all {{{
+func! s:Queue.join_execute_all(command) dict
     let code = a:command
     for idx in range(0, len(self.queue) - 1)
         let code .= printf(' self.queue[%d]', idx)
@@ -359,7 +359,7 @@ func! s:Prompt.run_menu(list) dict
         " Show prompt.
         call self.push("\n> ")
         redraw
-        call self.join_execute('echon')
+        call self.execute_all('echon')
 
         " Get input.
         let c = s:getc()
