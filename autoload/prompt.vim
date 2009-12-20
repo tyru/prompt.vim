@@ -69,12 +69,25 @@ endfunc
 " }}}
 
 " Candidates generator functions {{{
+"   len(a:seq) must NOT be 0, maybe.
+func! s:gen_seq_str(seq, idx)
+    let div  = (a:idx + 1) / len(a:seq)
+    let quot = (a:idx + 1) % len(a:seq)
+    if div < 1 || (div == 1 && quot == 0)
+        if quot == 0
+            " NOTE: "abc"[-1] is ''. [1,2,3][-1] is 3, though...
+            let quot = len(a:seq)
+        endif
+        return a:seq[quot - 1]
+    else
+        return a:seq[quot - 1] . s:gen_seq_str(a:seq, div - 1)
+    endif
+endfunc
 func! s:generate_alpha(idx)
-    return "abcdefghijklmnopqrstuvwxyz"[a:idx]
+    return s:gen_seq_str("abcdefghijklmnopqrstuvwxyz", a:idx)
 endfunc
 func! s:generate_asdf(idx)
-    " TODO
-    return "asdf"[a:idx]
+    return s:gen_seq_str("asdfghjkl;", a:idx)
 endfunc
 func! s:generate_num(idx)
     return a:idx + 1
@@ -338,7 +351,7 @@ func! s:Prompt.run_menu(list) dict
     while 1
         " Show candidates.
         call self.push(self.get_msg())
-        for k in keys(choice)
+        for k in sort(keys(choice))
             call self.push(printf("\n%s. %s", k, choice[k]))
         endfor
         call s:debugmsgf('filtered by %s: choice = %s', cur_input, string(choice))
@@ -354,8 +367,20 @@ func! s:Prompt.run_menu(list) dict
             " throw 'pressed_esc'
             return self.options.default
         endif
-        if c == "\<CR>" && cur_input == ''
-            return self.options.default
+        if c == "\<CR>"
+            if cur_input == ''
+                return self.options.default
+            elseif has_key(choice, cur_input)
+                let value = choice[cur_input]
+                if s:is_dict(value) || s:is_list(value)
+                    return self.run_menu(value)
+                else
+                    return value
+                endif
+            else
+                call s:warn('bad choice.')
+                continue
+            endif
         endif
 
         if has_key(choice, cur_input . c)
@@ -371,7 +396,7 @@ func! s:Prompt.run_menu(list) dict
                 let cur_input .= c
             endif
         else
-            call s:warn('invalid choice.')
+            call s:warn('bad choice.')
         endif
     endwhile
 endfunc
