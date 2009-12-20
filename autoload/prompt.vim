@@ -62,9 +62,10 @@ func! s:is_function(val)
     return type(a:val) == type(function('tr'))
 endfunc
 func! s:is_menuoptbuftype(val)
+    " TODO menu_opt_buftype
     return a:val =~#
     \       '^'.'\(allcmdline\|cmdline\|'.
-    \       'buffer\|allbuffer\|window\)'.'$'
+    \       'buffer\|allbuffer\|dialog\)'.'$'
 endfunc
 " }}}
 
@@ -252,6 +253,8 @@ endfunc
 
 
 " Objects.
+" FIXME Do not derive from any classes.
+" Just create s:Prompt object.
 " s:Object {{{
 let s:Object = {}
 
@@ -344,6 +347,7 @@ func! s:Prompt.create_message_buffer()
 endfunc
 " }}}
 " s:Prompt.run_menu {{{
+" TODO When a:list is dictionary.
 func! s:Prompt.run_menu(list) dict
     let cur_input = ''
     let choice = self.filter_candidates(a:list, cur_input)
