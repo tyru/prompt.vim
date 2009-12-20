@@ -379,6 +379,7 @@ func! s:Prompt.run_menu(list) dict
                 endif
             else
                 call s:warn('bad choice.')
+                sleep 1
                 continue
             endif
         endif
@@ -397,6 +398,7 @@ func! s:Prompt.run_menu(list) dict
             endif
         else
             call s:warn('bad choice.')
+            sleep 1
         endif
     endwhile
 endfunc
