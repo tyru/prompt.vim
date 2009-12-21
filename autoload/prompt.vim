@@ -61,11 +61,23 @@ endfunc
 func! s:is_function(val)
     return type(a:val) == type(function('tr'))
 endfunc
+func! s:is_callable(val)
+    if s:is_function(a:val) | return 1 | endif
+    if s:is_str(a:val) && exists('*'.a:val)
+        return 1
+    endif
+    return 0
+endfunc
+
 func! s:is_menuoptbuftype(val)
-    " TODO menu_opt_buftype
+    " TODO
     return a:val =~#
     \       '^'.'\(allcmdline\|cmdline\|'.
     \       'buffer\|allbuffer\|dialog\)'.'$'
+endfunc
+func! s:is_inputmethod(val)
+    return a:val =~#
+    \       '^'.'\(getchar\|input\)'.'$'
 endfunc
 " }}}
 " Sort functions {{{
@@ -115,96 +127,10 @@ let s:validate_fn = {
 \   'function': function('<SID>is_function'),
 \}
 
-" Options {{{
-let s:opt_info = {
-\   'speed': {'arg_type': 'num'},
-\   'echo': {'arg_type': 'str'},
-\   'newline': {'arg_type': 'str'},
-\   'default': {'arg_type': 'str'},
-\   'require': {'arg_type': 'dict'},
-\   'until': {'arg_type': 'str'},
-\   'while': {'arg_type': 'str'},
-\   'menu': {
-\       'arg_type': ['list', 'dict'],
-\       'alias_of': {'menuasdf': 1},
-\   },
-\   'onechar': {'arg_type': 'bool'},
-\   'escape': {'arg_type': 'bool'},
-\   'clear': {'arg_type': 'bool'},
-\   'clearfirst': {'arg_type': 'bool'},
-\   'argv': {'arg_type': 'bool'},
-\   'line': {'arg_type': 'bool'},
-\   'tty': {'arg_type': 'bool'},
-\   'yes': {'arg_type': 'bool'},
-\   'yesno': {'arg_type': 'bool'},
-\   'YES': {'arg_type': 'bool'},
-\   'YESNO': {'arg_type': 'bool'},
-\   'number': {'arg_type': 'bool'},
-\   'integer': {'arg_type': 'bool'},
-\
-\   'execute': {'arg_type': 'str'},
-\   'menuarray': {'arg_type': 'function'},
-\   'menualpha': {
-\       'arg_type': 'bool',
-\       'alias_of': {
-\           'menuarray': function('<SID>generate_alpha'),
-\           'sortmenu': 1,
-\       }
-\   },
-\   'menuasdf': {
-\       'arg_type': 'bool',
-\       'alias_of': {
-\           'menuarray': function('<SID>generate_asdf'),
-\           'sortmenu': 0,
-\       }
-\   },
-\   'menunum': {
-\       'arg_type': 'bool',
-\       'alias_of': {
-\           'menuarray': function('<SID>generate_num'),
-\           'sortmenu': 0,
-\       }
-\   },
-\   'menuoptbuftype': {
-\       'arg_type':
-\           'custom:' .
-\           string(function('<SID>is_menuoptbuftype'))
-\   },
-\   'sortmenu': {
-\       'arg_type': 'bool',
-\   },
-\   'sortby': {
-\       'arg_type': 'function',
-\   },
-\}
-" }}}
-" Aliases {{{
-call extend(s:opt_info, {
-\   's': s:opt_info.speed,
-\   'e': s:opt_info.echo,
-\   'nl': s:opt_info.newline,
-\   'd': s:opt_info.default,
-\   'r': s:opt_info.require,
-\   'u': s:opt_info.until,
-\   'failif': s:opt_info.until,
-\   'w': s:opt_info.while,
-\   'okayif': s:opt_info.while,
-\   'm': s:opt_info.menu,
-\   '1': s:opt_info.onechar,
-\   'x': s:opt_info.escape,
-\   'c': s:opt_info.clear,
-\   'f': s:opt_info.clearfirst,
-\   'a': s:opt_info.argv,
-\   'l': s:opt_info.line,
-\   't': s:opt_info.tty,
-\   'y': s:opt_info.yes,
-\   'yn': s:opt_info.yesno,
-\   'Y': s:opt_info.YES,
-\   'YN': s:opt_info.YESNO,
-\   'num': s:opt_info.number,
-\   'i': s:opt_info.integer,
-\}, 'error')
-" }}}
+let s:PROMPT = "> "
+let s:ESC = "\<Esc>"
+let s:CR = "\<CR>"
+let s:VALUE = function('garbagecollect')
 " }}}
 " Global Variables {{{
 if !exists('g:prompt_debug')
@@ -242,6 +168,8 @@ func! s:debugmsg(msg)
         call s:warn(a:msg)
     endif
 endfunc
+" }}}
+" s:debugmsgf {{{
 func! s:debugmsgf(fmt, ...)
     call s:debugmsg(call('printf', [a:fmt] + a:000))
 endfunc
@@ -288,43 +216,229 @@ func! s:Object.call(Fn, args) dict
 endfunc
 let s:Object.apply = s:Object.call
 " }}}
+" s:OptionManager {{{
+let s:OptionManager = s:Object.clone()
+
+" s:OptionManager.init {{{
+func! s:OptionManager.init() dict
+    let self.opt_info_all = {
+    \   'speed': {'arg_type': 'num'},
+    \   'echo': {'arg_type': 'str'},
+    \   'newline': {'arg_type': 'str'},
+    \   'default': {'arg_type': 'str'},
+    \   'require': {'arg_type': 'dict'},
+    \   'until': {'arg_type': 'str'},
+    \   'while': {'arg_type': 'str'},
+    \   'menu': {
+    \       'arg_type': ['list', 'dict'],
+    \       'expand_to': {'menuasdf': 1},
+    \       'remain_myself': 1,
+    \   },
+    \   'onechar': {'arg_type': 'bool'},
+    \   'escape': {'arg_type': 'bool'},
+    \   'clear': {'arg_type': 'bool'},
+    \   'clearfirst': {'arg_type': 'bool'},
+    \   'argv': {'arg_type': 'bool'},
+    \   'line': {'arg_type': 'bool'},
+    \   'tty': {'arg_type': 'bool'},
+    \   'yes': {'arg_type': 'bool'},
+    \   'yesno': {'arg_type': 'bool'},
+    \   'YES': {'arg_type': 'bool'},
+    \   'YESNO': {'arg_type': 'bool'},
+    \   'number': {'arg_type': 'bool'},
+    \   'integer': {'arg_type': 'bool'},
+    \
+    \   'execute': {'arg_type': 'str'},
+    \   'menuarray': {'arg_type': 'function'},
+    \   'menualpha': {
+    \       'arg_type': 'bool',
+    \       'expand_to': {
+    \           'menuarray': function('<SID>generate_alpha'),
+    \           'sortmenu': 1,
+    \       }
+    \   },
+    \   'menuasdf': {
+    \       'arg_type': 'bool',
+    \       'expand_to': {
+    \           'menuarray': function('<SID>generate_asdf'),
+    \           'sortmenu': 0,
+    \       }
+    \   },
+    \   'menunum': {
+    \       'arg_type': 'bool',
+    \       'expand_to': {
+    \           'menuarray': function('<SID>generate_num'),
+    \           'sortmenu': 0,
+    \       }
+    \   },
+    \   'menuoptbuftype': {
+    \       'arg_type':
+    \           'custom:' .
+    \           string(function('<SID>is_menuoptbuftype'))
+    \   },
+    \   'sortmenu': {
+    \       'arg_type': 'bool',
+    \   },
+    \   'sortby': {
+    \       'arg_type': 'function',
+    \   },
+    \   'inputmethod': {
+    \       'arg_type':
+    \           'custom:' .
+    \           string(function('<SID>is_inputmethod'))
+    \   },
+    \}
+
+    let self.opt_alias = {
+    \   's': 'speed',
+    \   'e': 'echo',
+    \   'nl': 'newline',
+    \   'd': 'default',
+    \   'r': 'require',
+    \   'u': 'until',
+    \   'failif': 'until',
+    \   'w': 'while',
+    \   'okayif': 'while',
+    \   'm': 'menu',
+    \   '1': 'onechar',
+    \   'x': 'escape',
+    \   'c': 'clear',
+    \   'f': 'clearfirst',
+    \   'a': 'argv',
+    \   'l': 'line',
+    \   't': 'tty',
+    \   'y': 'yes',
+    \   'yn': 'yesno',
+    \   'Y': 'YES',
+    \   'YN': 'YESNO',
+    \   'num': 'number',
+    \   'i': 'integer',
+    \}
+endfunc
+" }}}
+call s:OptionManager.init()
+
+" s:OptionManager.has {{{
+func! s:OptionManager.has(name) dict
+    if self.is_alias(a:name)
+        return s:has(a:name)
+    endif
+    return has_key(self.opt_info_all, a:name)
+endfunc
+" }}}
+" s:OptionManager.get {{{
+func! s:OptionManager.get(name, ...) dict
+    if self.is_alias(a:name)
+        return self.apply('s:OptionManager.get',
+        \       [self.opt_alias[a:name]] + a:000)
+    endif
+    if !self.has(a:name)
+        if a:000 == 0
+            throw 'internal_error'
+        else
+            return a:1
+        endif
+    endif
+    return self.opt_info_all[a:name]
+endfunc
+" }}}
+" s:OptionManager.is_alias {{{
+func! s:OptionManager.is_alias(name) dict
+    return has_key(self.opt_alias, a:name)
+endfunc
+" }}}
+" s:OptionManager.filter_alias {{{
+func! s:OptionManager.filter_alias(options, extend_opt) dict
+    let ret = {}
+    for k in keys(a:options)
+        if self.is_alias(k)
+            call extend(ret,
+            \           self.filter_alias(self.get(k), a:extend_opt),
+            \           a:extend_opt)
+        else
+            let ret[k] = a:options[k]
+        endif
+    endfor
+    return ret
+endfunc
+" }}}
+" s:OptionManager.expand {{{
+"   expand options if it has 'expand_to'.
+func! s:OptionManager.expand(options, extend_opt) dict
+    let ret = {}
+    for k in keys(a:options)
+        let info = self.get(k)
+        call s:debugmsg('info = '.string(info))
+        if has_key(info, 'expand_to')
+            call extend(ret,
+            \           self.expand(info.expand_to, a:extend_opt),
+            \           a:extend_opt)
+            if has_key(info, 'remain_myself')
+                let ret[k] = a:options[k]
+            endif
+        else
+            let ret[k] = a:options[k]
+        endif
+    endfor
+    return ret
+endfunc
+" }}}
+" }}}
 " s:Prompt {{{
 let s:Prompt = s:Object.clone()
 
 " s:Prompt.init {{{
-func! s:Prompt.init(msg, options) dict
-    call s:debugmsg("s:Prompt.init()...")
-    call self.call(s:Object.init, [])
+func! s:Prompt.init(option_manager) dict
+    let self.opt_info = a:option_manager
+endfunc
+" }}}
+call s:Prompt.init(s:OptionManager)
 
+" s:Prompt.set_msg {{{
+func! s:Prompt.set_msg(msg) dict
     let self.msg = a:msg
+endfunc
+" }}}
+" s:Prompt.set_options {{{
+func! s:Prompt.set_options(options) dict
     let self.options = a:options
+endfunc
+" }}}
+
+" s:Prompt.run {{{
+func! s:Prompt.run() dict
+    call s:debugmsg('options = ' . string(self.options))
+
+    for k in keys(self.options)
+        " Remove '_' in keys.
+        let self.options[substitute(k, '_', '', 'g')] = self.options[k]
+    endfor
+
+    let self.options = self.opt_info.filter_alias(self.options, 'force')
+    let self.options = self.opt_info.expand(self.options, 'force')
+    call self.add_default_options()
+    call self.validate_options()
+
+    call s:debugmsg('options = ' . string(self.options))
+
+
+    let value = self.dispatch()
+    if self.opt_info.has('execute') && !empty(value)
+        redraw
+        execute printf(self.options.execute, value)
+    endif
+    return value
 endfunc
 " }}}
 " s:Prompt.dispatch {{{
 func! s:Prompt.dispatch() dict
-    call s:Prompt.create_message_buffer()
-
-    if has_key(self.options, 'menu')
+    if has_key(self.options, 'yesno')
+        return self.run_yesno()
+    elseif has_key(self.options, 'menu')
         return self.run_menu(self.options.menu)
-    endif
-endfunc
-" }}}
-" s:Prompt.create_message_buffer() {{{
-func! s:Prompt.create_message_buffer()
-    if self.options.menuoptbuftype ==# 'allcmdline'
-        " nop.
     else
-        " TODO
+        return input()
     endif
-endfunc
-" }}}
-" s:Prompt.sort_menu_ids {{{
-func! s:Prompt.sort_menu_ids(keys)
-    let keys = a:keys
-    if has_key(self.options, 'sortmenu') && self.options.sortmenu
-        call sort(keys, self.options.sortby)
-    endif
-    return keys
 endfunc
 " }}}
 " s:Prompt.run_menu {{{
@@ -342,15 +456,16 @@ func! s:Prompt.run_menu(list) dict
         call s:debugmsgf('filtered by %s: choice = %s', cur_input, string(choice))
 
         " Show prompt.
-        echon "\n> "
+        echon "\n"
+        echon s:PROMPT
 
         " Get input.
         let c = s:getc()
-        if c == "\<ESC>"
+        if c == s:ESC
             " throw 'pressed_esc'
             return self.options.default
         endif
-        if c == "\<CR>"
+        if c == s:CR
             if cur_input == ''
                 return self.options.default
             elseif has_key(choice, cur_input)
@@ -386,6 +501,28 @@ func! s:Prompt.run_menu(list) dict
     endwhile
 endfunc
 " }}}
+" s:Prompt.run_yesno {{{
+func! s:Prompt.run_yesno() dict
+    " TODO
+    while 1
+        " Get input.
+        while 1
+            if self.options.inputmethod
+            endif
+        endwhile
+    endwhile
+endfunc
+" }}}
+
+" s:Prompt.sort_menu_ids {{{
+func! s:Prompt.sort_menu_ids(keys) dict
+    let keys = a:keys
+    if has_key(self.options, 'sortmenu') && self.options.sortmenu
+        call sort(keys, self.options.sortby)
+    endif
+    return keys
+endfunc
+" }}}
 " s:Prompt.get_msg {{{
 func! s:Prompt.get_msg() dict
     if has_key(self.options, 'menu')
@@ -406,99 +543,71 @@ func! s:Prompt.filter_candidates(list, cur_input) dict
     return a:cur_input == '' ? choice : filter(choice, 'stridx(v:key, a:cur_input) == 0')
 endfunc
 " }}}
+
+" s:Prompt.add_default_options {{{
+func! s:Prompt.add_default_options() dict
+    return extend(self.options, self.opt_info.expand(
+    \   {
+    \      'speed': '0.075',
+    \      'default': '',
+    \      'menualpha': 1,
+    \      'menuoptbuftype': 'allcmdline',
+    \      'sortby': function('<SID>sortfn_string'),
+    \   },
+    \   'force'),
+    \'keep')
+endfunc
 " }}}
+" s:Prompt.validate_options {{{
+func! s:Prompt.validate_options() dict
+    for k in keys(self.options)
+        call s:debugmsgf("k = %s, v = %s", string(k), string(self.options[k]))
 
-
-" s:match_info {{{
-func! s:match_info(opt_name, opt_val)
+        if !self.opt_info.has(k)
+            throw 'unknown_option'
+        else
+            let got = self.opt_info.get(k)
+            if has_key(got, 'expand_to') && !has_key(got, 'remain_myself')
+                throw 'all_options_must_be_expanded'
+            endif
+        endif
+        if !self.__validate(self.opt_info.get(k).arg_type, self.options[k])
+            throw printf('invalid_type: {%s:%s}', string(k), string(self.options[k]))
+        endif
+    endfor
+endfunc
+" }}}
+" s:Prompt.__validate {{{
+func! s:Prompt.__validate(opt_name, opt_val) dict
     if s:is_str(a:opt_name)
         if stridx(a:opt_name, 'custom:') == 0
             let fn_str = substitute(a:opt_name, '^custom:', '', '')
             return eval(fn_str)(a:opt_val)
         else
-            call s:debugmsgf("a:opt_name = %s, ".
-            \                "a:opt_val = %s, ".
-            \                "s:validate_fn[a:opt_name] = %s",
-            \                string(a:opt_name),
-            \                string(a:opt_val),
-            \                string(s:validate_fn[a:opt_name]))
             return s:validate_fn[a:opt_name](a:opt_val)
         endif
     elseif s:is_list(a:opt_name)
         if len(a:opt_name) == 1
-            return s:match_info(a:opt_name[0], a:opt_val)
+            return self.__validate(a:opt_name[0], a:opt_val)
         else
-            return s:match_info(a:opt_name[0], a:opt_val)
-            \   || s:match_info(a:opt_name[1:], a:opt_val)
+            return self.__validate(a:opt_name[0], a:opt_val)
+            \   || self.__validate(a:opt_name[1:], a:opt_val)
         endif
     else
         throw 'internal_error'
     endif
 endfunc
 " }}}
-" s:validate_options {{{
-func! s:validate_options(options)
-    for k in keys(a:options)
-        call s:debugmsgf("k = %s, v = %s", string(k), string(a:options[k]))
+" }}}
 
-        if !has_key(s:opt_info, k)
-            throw 'unknown_option'
-        elseif !s:match_info(s:opt_info[k].arg_type, a:options[k])
-            throw printf('invalid_type: {%s:%s}', string(k), string(a:options[k]))
-        endif
-    endfor
-endfunc
-" }}}
-" s:add_default_options {{{
-func! s:add_default_options(options)
-    return extend(copy(a:options), {
-    \   'speed': '0.075',
-    \   'default': '',
-    \   'menualpha': 1,
-    \   'menuoptbuftype': 'allcmdline',
-    \   'sortby': function('<SID>sortfn_string'),
-    \}, 'keep')
-endfunc
-" }}}
-" s:filter_options {{{
-func! s:filter_options(options)
-    let options = a:options
-    let expanded_options = {}    " not to override arguments specified by user.
-    for k in keys(a:options)
-        if has_key(s:opt_info[k], 'alias_of')
-            " unlet options[k]
-            call extend(expanded_options, s:filter_options(s:opt_info[k].alias_of), 'keep')
-        endif
-        unlet k
-    endfor
-    return extend(options, expanded_options, 'keep')
-endfunc
-" }}}
 
 " prompt#prompt() {{{
 func! prompt#prompt(msg, options)
-    let options = {}
-    for k in keys(a:options)
-        " Remove '_' in option name.
-        let options[substitute(k, '_', '', 'g')] = a:options[k]
-        unlet k
-    endfor
-
-    let options = s:add_default_options(options)
-    let options = s:filter_options(options)
-    call s:validate_options(options)
-    call s:debugmsg('options:' . string(options))
-
-    call s:Prompt.init(a:msg, options)
-    let value = s:Prompt.dispatch()
-    if has_key(options, 'execute') && !empty(value)
-        redraw
-        execute printf(options.execute, value)
-    endif
-    return value
+    call s:Prompt.set_msg(a:msg)
+    call s:Prompt.set_options(a:options)
+    return s:Prompt.run()
 endfunc
 " }}}
-
 " }}}
 
 " Commands {{{
