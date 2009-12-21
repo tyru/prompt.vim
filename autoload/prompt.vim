@@ -123,9 +123,6 @@ let s:validate_fn = {
 \   'function': function('<SID>is_function'),
 \}
 
-let s:ESC = "\<Esc>"
-let s:CR = "\<CR>"
-let s:VALUE = function('garbagecollect')
 let s:YESNO_PAT = {
 \   'yes': '[\w\W]*',
 \   'yesno': '^\s*[yYnN]',
@@ -351,7 +348,7 @@ func! s:OptionManager.get(name, ...) dict
         \       [self.opt_alias[a:name]] + a:000)
     endif
     if !self.exists(a:name)
-        if a:000 == 0
+        if a:0 == 0
             throw 'internal_error'
         else
             return a:1
@@ -385,8 +382,9 @@ endfunc
 func! s:OptionManager.expand(options, extend_opt) dict
     let ret = {}
     for k in keys(a:options)
+        call s:debugmsgf("options = {%s:%s}", k, string(a:options[k]))
+
         let info = self.get(k)
-        call s:debugmsg('info = '.string(info))
         if has_key(info, 'expand_to')
             call extend(ret,
             \           self.expand(info.expand_to, a:extend_opt),
@@ -427,9 +425,11 @@ endfunc
 func! s:Prompt.run() dict
     call s:debugmsg('options = ' . string(self.options))
 
-    for k in keys(self.options)
-        " Remove '_' in keys.
-        let self.options[substitute(k, '_', '', 'g')] = self.options[k]
+    " Remove '_' in keys.
+    let opts = self.options
+    let self.options = {}    " clear
+    for k in keys(opts)
+        let self.options[substitute(k, '_', '', 'g')] = opts[k]
     endfor
 
     let self.options = self.opt_info.filter_alias(self.options, 'force')
@@ -457,71 +457,55 @@ func! s:Prompt.dispatch() dict
     \   : has_key(self.options, 'YESNO') ? 'YESNO'
     \   : ''
 
-    if yesno_type != ''
-        return self.run_yesno(yesno_type)
-    elseif has_key(self.options, 'menu')
-        return self.run_menu(self.options.menu)
-    else
-        return input(self.msg)
-    endif
+    try
+        if yesno_type != ''
+            return self.run_yesno(yesno_type)
+        elseif has_key(self.options, 'menu')
+            let self.options.escape = 1
+            return self.run_menu(self.options.menu)
+        else
+            echo self.msg
+            return self.get_input()
+        endif
+    catch /^pressed_esc$/
+        return "\e"
+    endtry
 endfunc
 " }}}
 " s:Prompt.run_menu {{{
 " TODO When a:list is dictionary.
 func! s:Prompt.run_menu(list) dict
-    let cur_input = ''
-    let choice = self.filter_candidates(a:list, cur_input)
-    let displayed = 0
+    " Make displaying list.
+    let choice = {}
+    for idx in range(0, len(a:list) - 1)
+        let key = self.options.menuidfunc(idx) . ""
+        let choice[key] = a:list[idx]
+    endfor
+
+    " Show candidates.
+    echo self.msg
+    call s:debugmsg('choice = '.string(choice))
+    for k in self.sort_menu_ids(keys(choice))
+        echon printf("\n%s. %s", k, choice[k])
+    endfor
+    call s:debugmsg('choice = '.string(choice))
 
     while 1
-        " Show candidates.
-        if !(g:prompt_menu_display_once && displayed)
-            echon self.get_msg()
-            for k in self.sort_menu_ids(keys(choice))
-                echon printf("\n%s. %s", k, choice[k])
-            endfor
-            call s:debugmsgf('filtered by %s: choice = %s', cur_input, string(choice))
-            let displayed = 1
-        endif
-        " Show prompt.
         echon "\n" g:prompt_prompt
+        let input = self.get_input()
+        call s:debugmsg(input)
 
-        " Get input.
-        let c = s:getc()
-        if c == s:ESC
-            " throw 'pressed_esc'
+        if input == ''
             return self.options.default
-        endif
-        if c == s:CR
-            if cur_input == ''
-                return self.options.default
-            elseif has_key(choice, cur_input)
-                let value = choice[cur_input]
-                if s:is_dict(value) || s:is_list(value)
-                    return self.run_menu(value)
-                else
-                    return value
-                endif
+        elseif has_key(choice, input)
+            if s:is_dict(choice[input]) || s:is_list(choice[input])
+                return self.run_menu(choice[input])
             else
-                call s:bad_choice('bad choice.')
-                continue
-            endif
-        endif
-
-        if has_key(choice, cur_input . c)
-            let choice = self.filter_candidates(a:list, cur_input . c)
-            if len(choice) == 1
-                let [value] = values(choice)
-                if s:is_dict(value) || s:is_list(value)
-                    return self.run_menu(value)
-                else
-                    return value
-                endif
-            else
-                let cur_input .= c
+                return choice[input]
             endif
         else
             call s:bad_choice('bad choice.')
+            continue
         endif
     endwhile
 endfunc
@@ -529,10 +513,7 @@ endfunc
 " s:Prompt.run_yesno {{{
 func! s:Prompt.run_yesno(opt) dict
     while 1
-        while 1
-            let [input, done] = self.get_input()
-            if done | break | endif
-        endwhile
+        let input = self.get_input()
         call s:debugmsg(input)
 
         if input =~# s:YESNO_PAT[a:opt]
@@ -546,16 +527,38 @@ endfunc
 
 " s:Prompt.get_input {{{
 func! s:Prompt.get_input() dict
-    if has_key(self.options, 'onechar')
-        throw 'not_implemented: self.options.onechar is not implemented'
-    else
-        " TODO option to decide if self.options.default
-        " is passed to arg 2 of input().
-        return [input(self.msg), 1]
-    endif
+    let input = ''
+    let opt_escape =
+    \   has_key(self.options, 'escape')
+    \   && self.options.escape
+    let opt_onechar =
+    \   has_key(self.options, 'onechar')
+    \   && self.options.onechar
+
+    while 1
+        let c = s:getc()
+        if opt_escape && c ==# "\<Esc>"
+            throw 'pressed_esc'
+        endif
+        if opt_onechar
+            return c
+        endif
+        if c ==# "\<CR>"
+            break
+        endif
+
+        if has_key(self.options, 'echo')
+            echon self.options.echo
+        else
+            " TODO Backspace
+            echon c
+        endif
+
+        let input .= c
+    endwhile
+    return input
 endfunc
 " }}}
-
 " s:Prompt.sort_menu_ids {{{
 func! s:Prompt.sort_menu_ids(keys) dict
     let keys = a:keys
@@ -563,26 +566,6 @@ func! s:Prompt.sort_menu_ids(keys) dict
         call sort(keys, self.options.sortby)
     endif
     return keys
-endfunc
-" }}}
-" s:Prompt.get_msg {{{
-func! s:Prompt.get_msg() dict
-    if has_key(self.options, 'menu')
-        return self.msg "\n"
-    else
-        return self.msg
-    endif
-endfunc
-" }}}
-" s:Prompt.filter_candidates {{{
-func! s:Prompt.filter_candidates(list, cur_input) dict
-    let choice = {}
-    for idx in range(0, len(a:list) - 1)
-        let key = self.options.menuidfunc(idx) . ""
-        let choice[key] = a:list[idx]
-    endfor
-    call s:debugmsgf('a:cur_input = %s, choice = %s', a:cur_input, string(choice))
-    return a:cur_input == '' ? choice : filter(choice, 'stridx(v:key, a:cur_input) == 0')
 endfunc
 " }}}
 
