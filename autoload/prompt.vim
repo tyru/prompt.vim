@@ -6,7 +6,7 @@ scriptencoding utf-8
 " Name: prompt.vim
 " Version: 0.0.0
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2009-12-21.
+" Last Change: 2009-12-22.
 "
 " Description:
 "   Prompt with Vimperator-like keybind.
@@ -143,6 +143,9 @@ if !exists('g:prompt_debug')
 endif
 if !exists('g:prompt_prompt')
     let g:prompt_prompt = '> '
+endif
+if !exists('g:prompt_menu_display_once')
+    let g:prompt_menu_display_once = 0
 endif
 " }}}
 
@@ -468,18 +471,20 @@ endfunc
 func! s:Prompt.run_menu(list) dict
     let cur_input = ''
     let choice = self.filter_candidates(a:list, cur_input)
+    let displayed = 0
 
     while 1
         " Show candidates.
-        echon self.get_msg()
-        for k in self.sort_menu_ids(keys(choice))
-            echon printf("\n%s. %s", k, choice[k])
-        endfor
-        call s:debugmsgf('filtered by %s: choice = %s', cur_input, string(choice))
-
+        if !(g:prompt_menu_display_once && displayed)
+            echon self.get_msg()
+            for k in self.sort_menu_ids(keys(choice))
+                echon printf("\n%s. %s", k, choice[k])
+            endfor
+            call s:debugmsgf('filtered by %s: choice = %s', cur_input, string(choice))
+            let displayed = 1
+        endif
         " Show prompt.
-        echon "\n"
-        echon g:prompt_prompt
+        echon "\n" g:prompt_prompt
 
         " Get input.
         let c = s:getc()
