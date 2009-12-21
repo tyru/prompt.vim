@@ -6,7 +6,7 @@ scriptencoding utf-8
 " Name: prompt.vim
 " Version: 0.0.0
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2009-12-20.
+" Last Change: 2009-12-21.
 "
 " Description:
 "   Prompt with Vimperator-like keybind.
@@ -68,7 +68,14 @@ func! s:is_menuoptbuftype(val)
     \       'buffer\|allbuffer\|dialog\)'.'$'
 endfunc
 " }}}
-
+" Sort functions {{{
+func! s:sortfn_string(s1, s2)
+    return a:s1 ==# a:s2 ? 0 : a:s1 > a:s2 ? 1 : -1
+endfunc
+func! s:sortfn_number(i1, i2)
+    return a:i1 ==# a:i2 ? 0 : a:i1 > a:i2 ? 1 : -1
+endfunc
+" }}}
 " Candidates generator functions {{{
 "   len(a:seq) must NOT be 0, maybe.
 func! s:gen_seq_str(seq, idx)
@@ -98,8 +105,17 @@ endfunc
 
 " Scope Variables {{{
 let s:debug_errmsg = []
+let s:validate_fn = {
+\   'str': function('<SID>no_validate'),
+\   'int': function('<SID>is_int'),
+\   'num': function('<SID>is_num'),
+\   'bool': function('<SID>no_validate'),
+\   'dict': function('<SID>is_dict'),
+\   'list': function('<SID>is_list'),
+\   'function': function('<SID>is_function'),
+\}
 
-" Options
+" Options {{{
 let s:opt_info = {
 \   'speed': {'arg_type': 'num'},
 \   'echo': {'arg_type': 'str'},
@@ -110,7 +126,7 @@ let s:opt_info = {
 \   'while': {'arg_type': 'str'},
 \   'menu': {
 \       'arg_type': ['list', 'dict'],
-\       'add': {'menualpha': 1}
+\       'alias_of': {'menuasdf': 1},
 \   },
 \   'onechar': {'arg_type': 'bool'},
 \   'escape': {'arg_type': 'bool'},
@@ -131,28 +147,38 @@ let s:opt_info = {
 \   'menualpha': {
 \       'arg_type': 'bool',
 \       'alias_of': {
-\           'menuarray': function('<SID>generate_alpha')
+\           'menuarray': function('<SID>generate_alpha'),
+\           'sortmenu': 1,
 \       }
 \   },
 \   'menuasdf': {
 \       'arg_type': 'bool',
 \       'alias_of': {
-\           'menuarray': function('<SID>generate_asdf')
+\           'menuarray': function('<SID>generate_asdf'),
+\           'sortmenu': 0,
 \       }
 \   },
 \   'menunum': {
 \       'arg_type': 'bool',
 \       'alias_of': {
-\           'menuarray': function('<SID>generate_num')
+\           'menuarray': function('<SID>generate_num'),
+\           'sortmenu': 0,
 \       }
 \   },
 \   'menuoptbuftype': {
 \       'arg_type':
 \           'custom:' .
 \           string(function('<SID>is_menuoptbuftype'))
-\   }
+\   },
+\   'sortmenu': {
+\       'arg_type': 'bool',
+\   },
+\   'sortby': {
+\       'arg_type': 'function',
+\   },
 \}
-" Aliases
+" }}}
+" Aliases {{{
 call extend(s:opt_info, {
 \   's': s:opt_info.speed,
 \   'e': s:opt_info.echo,
@@ -178,16 +204,7 @@ call extend(s:opt_info, {
 \   'num': s:opt_info.number,
 \   'i': s:opt_info.integer,
 \}, 'error')
-
-let s:validate_fn = {
-\   'str': function('<SID>no_validate'),
-\   'int': function('<SID>is_int'),
-\   'num': function('<SID>is_num'),
-\   'bool': function('<SID>no_validate'),
-\   'dict': function('<SID>is_dict'),
-\   'list': function('<SID>is_list'),
-\   'function': function('<SID>is_function'),
-\}
+" }}}
 " }}}
 " Global Variables {{{
 if !exists('g:prompt_debug')
@@ -346,6 +363,15 @@ func! s:Prompt.create_message_buffer()
     endif
 endfunc
 " }}}
+" s:Prompt.sort_menu_ids {{{
+func! s:Prompt.sort_menu_ids(keys)
+    let keys = a:keys
+    if has_key(self.options, 'sortmenu') && self.options.sortmenu
+        call sort(keys, self.options.sortby)
+    endif
+    return keys
+endfunc
+" }}}
 " s:Prompt.run_menu {{{
 " TODO When a:list is dictionary.
 func! s:Prompt.run_menu(list) dict
@@ -355,7 +381,7 @@ func! s:Prompt.run_menu(list) dict
     while 1
         " Show candidates.
         call self.push(self.get_msg())
-        for k in sort(keys(choice))
+        for k in self.sort_menu_ids(keys(choice))
             call self.push(printf("\n%s. %s", k, choice[k]))
         endfor
         call s:debugmsgf('filtered by %s: choice = %s', cur_input, string(choice))
@@ -477,20 +503,17 @@ func! s:add_default_options(options)
     \   'default': '',
     \   'menualpha': 1,
     \   'menuoptbuftype': 'allcmdline',
+    \   'sortby': function('<SID>sortfn_string'),
     \}, 'keep')
 endfunc
 " }}}
 " s:filter_options {{{
 func! s:filter_options(options)
-    let options = {}
+    let options = a:options
     let expanded_options = {}    " not to override arguments specified by user.
     for k in keys(a:options)
-        let options[k] = a:options[k]
-
-        if has_key(s:opt_info[k], 'add')
-            call extend(expanded_options, s:filter_options(s:opt_info[k].add), 'keep')
-        elseif has_key(s:opt_info[k], 'alias_of')
-            unlet options[k]
+        if has_key(s:opt_info[k], 'alias_of')
+            " unlet options[k]
             call extend(expanded_options, s:filter_options(s:opt_info[k].alias_of), 'keep')
         endif
         unlet k
