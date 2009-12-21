@@ -288,58 +288,13 @@ func! s:Object.call(Fn, args) dict
 endfunc
 let s:Object.apply = s:Object.call
 " }}}
-" s:Queue {{{
-let s:Queue = s:Object.clone()
-
-" s:Queue.init {{{
-func! s:Queue.init() dict
-    call s:debugmsg("s:Queue.init()...")
-    call self.call(s:Object.init, [])
-
-    let self.queue = []
-endfunc
-" }}}
-" s:Queue.push {{{
-func! s:Queue.push(val) dict
-    call add(self.queue, a:val)
-endfunc
-" }}}
-" s:Queue.execute {{{
-func! s:Queue.execute(command)
-    execute a:command "remove(self.queue, 0)"
-endfunc
-" }}}
-" s:Queue.execute_all {{{
-func! s:Queue.execute_all(command)
-    for i in self.queue
-        execute a:command "i"
-    endfor
-    let self.queue = []
-endfunc
-" }}}
-" s:Queue.join_execute_all {{{
-func! s:Queue.join_execute_all(command) dict
-    let code = a:command
-    for idx in range(0, len(self.queue) - 1)
-        let code .= printf(' self.queue[%d]', idx)
-    endfor
-    execute code
-    let self.queue = []
-endfunc
-" }}}
-" s:Queue.map {{{
-func! s:Queue.map(expr) dict
-    return map(self.queue, a:expr)
-endfunc
-" }}}
-" }}}
 " s:Prompt {{{
-let s:Prompt = s:Queue.clone()
+let s:Prompt = s:Object.clone()
 
 " s:Prompt.init {{{
 func! s:Prompt.init(msg, options) dict
     call s:debugmsg("s:Prompt.init()...")
-    call self.call(s:Queue.init, [])
+    call self.call(s:Object.init, [])
 
     let self.msg = a:msg
     let self.options = a:options
@@ -380,16 +335,14 @@ func! s:Prompt.run_menu(list) dict
 
     while 1
         " Show candidates.
-        call self.push(self.get_msg())
+        echon self.get_msg()
         for k in self.sort_menu_ids(keys(choice))
-            call self.push(printf("\n%s. %s", k, choice[k]))
+            echon printf("\n%s. %s", k, choice[k])
         endfor
         call s:debugmsgf('filtered by %s: choice = %s', cur_input, string(choice))
 
         " Show prompt.
-        call self.push("\n> ")
-        redraw
-        call self.execute_all('echon')
+        echon "\n> "
 
         " Get input.
         let c = s:getc()
