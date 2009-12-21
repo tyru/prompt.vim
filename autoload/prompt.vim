@@ -261,25 +261,25 @@ func! s:OptionManager.init() dict
     \   'integer': {'arg_type': 'bool'},
     \
     \   'execute': {'arg_type': 'str'},
-    \   'menuarray': {'arg_type': 'function'},
+    \   'menuidfunc': {'arg_type': 'function'},
     \   'menualpha': {
     \       'arg_type': 'bool',
     \       'expand_to': {
-    \           'menuarray': function('<SID>generate_alpha'),
+    \           'menuidfunc': function('<SID>generate_alpha'),
     \           'sortmenu': 1,
     \       }
     \   },
     \   'menuasdf': {
     \       'arg_type': 'bool',
     \       'expand_to': {
-    \           'menuarray': function('<SID>generate_asdf'),
+    \           'menuidfunc': function('<SID>generate_asdf'),
     \           'sortmenu': 0,
     \       }
     \   },
     \   'menunum': {
     \       'arg_type': 'bool',
     \       'expand_to': {
-    \           'menuarray': function('<SID>generate_num'),
+    \           'menuidfunc': function('<SID>generate_num'),
     \           'sortmenu': 0,
     \       }
     \   },
@@ -565,7 +565,7 @@ endfunc
 func! s:Prompt.filter_candidates(list, cur_input) dict
     let choice = {}
     for idx in range(0, len(a:list) - 1)
-        let key = self.options.menuarray(idx) . ""
+        let key = self.options.menuidfunc(idx) . ""
         let choice[key] = a:list[idx]
     endfor
     call s:debugmsgf('a:cur_input = %s, choice = %s', a:cur_input, string(choice))
