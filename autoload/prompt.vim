@@ -539,8 +539,8 @@ func! prompt#prompt(msg, options)
     call s:Prompt.init(a:msg, options)
     let value = s:Prompt.dispatch()
     if has_key(options, 'execute') && !empty(value)
-        execute printf(options.execute, value)
         redraw
+        execute printf(options.execute, value)
     endif
     return value
 endfunc
