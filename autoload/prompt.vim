@@ -123,7 +123,6 @@ let s:validate_fn = {
 \   'function': function('<SID>is_function'),
 \}
 
-let s:PROMPT = "> "
 let s:ESC = "\<Esc>"
 let s:CR = "\<CR>"
 let s:VALUE = function('garbagecollect')
@@ -141,6 +140,9 @@ let s:YESNO_ERR_MSG = {
 " Global Variables {{{
 if !exists('g:prompt_debug')
     let g:prompt_debug = 0
+endif
+if !exists('g:prompt_prompt')
+    let g:prompt_prompt = '> '
 endif
 " }}}
 
@@ -477,7 +479,7 @@ func! s:Prompt.run_menu(list) dict
 
         " Show prompt.
         echon "\n"
-        echon s:PROMPT
+        echon g:prompt_prompt
 
         " Get input.
         let c = s:getc()
