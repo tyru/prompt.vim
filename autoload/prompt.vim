@@ -69,7 +69,7 @@ func! s:is_callable(val)
     return 0
 endfunc
 
-func! s:is_menuoptbuftype(val)
+func! s:is_menutype(val)
     " TODO
     return a:val =~#
     \       '^'.'\(allcmdline\|cmdline\|'.
@@ -283,10 +283,10 @@ func! s:OptionManager.init() dict
     \           'sortmenu': 0,
     \       }
     \   },
-    \   'menuoptbuftype': {
+    \   'menutype': {
     \       'arg_type':
     \           'custom:' .
-    \           string(function('<SID>is_menuoptbuftype'))
+    \           string(function('<SID>is_menutype'))
     \   },
     \   'sortmenu': {
     \       'arg_type': 'bool',
@@ -320,6 +320,12 @@ func! s:OptionManager.init() dict
     \   'YN': 'YESNO',
     \   'num': 'number',
     \   'i': 'integer',
+    \
+    \   'exe': 'execute',
+    \   'alpha': 'menualpha',
+    \   'asdf': 'menuasdf',
+    \   'sm': 'sortmenu',
+    \   'sb': 'sortby',
     \}
 endfunc
 " }}}
@@ -580,7 +586,7 @@ func! s:Prompt.add_default_options() dict
     \      'speed': '0.075',
     \      'default': '',
     \      'menualpha': 1,
-    \      'menuoptbuftype': 'allcmdline',
+    \      'menutype': 'allcmdline',
     \      'sortby': function('<SID>sortfn_string'),
     \   },
     \   'force'),
