@@ -75,10 +75,6 @@ func! s:is_menuoptbuftype(val)
     \       '^'.'\(allcmdline\|cmdline\|'.
     \       'buffer\|allbuffer\|dialog\)'.'$'
 endfunc
-func! s:is_inputmethod(val)
-    return a:val =~#
-    \       '^'.'\(getchar\|input\)'.'$'
-endfunc
 " }}}
 " Sort functions {{{
 func! s:sortfn_string(s1, s2)
@@ -131,6 +127,16 @@ let s:PROMPT = "> "
 let s:ESC = "\<Esc>"
 let s:CR = "\<CR>"
 let s:VALUE = function('garbagecollect')
+let s:YESNO_PAT = {
+\   'yes': '[\w\W]*',
+\   'yesno': '^\s*[yYnN]',
+\   'YES': '[\w\W]*',
+\   'YESNO': '^\s*[YN]',
+\}
+let s:YESNO_ERR_MSG = {
+\   'yesno': "Please answer 'y' or 'n'",
+\   'YESNO': "Please answer 'Y' or 'N'",
+\}
 " }}}
 " Global Variables {{{
 if !exists('g:prompt_debug')
@@ -188,6 +194,12 @@ endfunc
 " s:warnf {{{
 func! s:warnf(fmt, ...)
     call s:warn(call('printf', [a:fmt] + a:000))
+endfunc
+" }}}
+" s:bad_choice {{{
+func! s:bad_choice(msg)
+    call s:warn(a:msg)
+    sleep 1
 endfunc
 " }}}
 " s:getc {{{
@@ -282,11 +294,6 @@ func! s:OptionManager.init() dict
     \   'sortby': {
     \       'arg_type': 'function',
     \   },
-    \   'inputmethod': {
-    \       'arg_type':
-    \           'custom:' .
-    \           string(function('<SID>is_inputmethod'))
-    \   },
     \}
 
     let self.opt_alias = {
@@ -318,10 +325,10 @@ endfunc
 " }}}
 call s:OptionManager.init()
 
-" s:OptionManager.has {{{
-func! s:OptionManager.has(name) dict
+" s:OptionManager.exists {{{
+func! s:OptionManager.exists(name) dict
     if self.is_alias(a:name)
-        return s:has(a:name)
+        return self.exists(a:name)
     endif
     return has_key(self.opt_info_all, a:name)
 endfunc
@@ -332,7 +339,7 @@ func! s:OptionManager.get(name, ...) dict
         return self.apply('s:OptionManager.get',
         \       [self.opt_alias[a:name]] + a:000)
     endif
-    if !self.has(a:name)
+    if !self.exists(a:name)
         if a:000 == 0
             throw 'internal_error'
         else
@@ -423,7 +430,7 @@ func! s:Prompt.run() dict
 
 
     let value = self.dispatch()
-    if self.opt_info.has('execute') && !empty(value)
+    if has_key(self.options, 'execute') && !empty(value)
         redraw
         execute printf(self.options.execute, value)
     endif
@@ -432,12 +439,19 @@ endfunc
 " }}}
 " s:Prompt.dispatch {{{
 func! s:Prompt.dispatch() dict
-    if has_key(self.options, 'yesno')
-        return self.run_yesno()
+    let yesno_type =
+    \   has_key(self.options, 'yes') ? 'yes'
+    \   : has_key(self.options, 'yesno') ? 'yesno'
+    \   : has_key(self.options, 'YES') ? 'YES'
+    \   : has_key(self.options, 'YESNO') ? 'YESNO'
+    \   : ''
+
+    if yesno_type != ''
+        return self.run_yesno(yesno_type)
     elseif has_key(self.options, 'menu')
         return self.run_menu(self.options.menu)
     else
-        return input()
+        return input(self.msg)
     endif
 endfunc
 " }}}
@@ -476,8 +490,7 @@ func! s:Prompt.run_menu(list) dict
                     return value
                 endif
             else
-                call s:warn('bad choice.')
-                sleep 1
+                call s:bad_choice('bad choice.')
                 continue
             endif
         endif
@@ -495,22 +508,38 @@ func! s:Prompt.run_menu(list) dict
                 let cur_input .= c
             endif
         else
-            call s:warn('bad choice.')
-            sleep 1
+            call s:bad_choice('bad choice.')
         endif
     endwhile
 endfunc
 " }}}
 " s:Prompt.run_yesno {{{
-func! s:Prompt.run_yesno() dict
-    " TODO
+func! s:Prompt.run_yesno(opt) dict
     while 1
-        " Get input.
         while 1
-            if self.options.inputmethod
-            endif
+            let [input, done] = self.get_input()
+            if done | break | endif
         endwhile
+        call s:debugmsg(input)
+
+        if input =~# s:YESNO_PAT[a:opt]
+            return input
+        else
+            call s:bad_choice(s:YESNO_ERR_MSG[a:opt])
+        endif
     endwhile
+endfunc
+" }}}
+
+" s:Prompt.get_input {{{
+func! s:Prompt.get_input() dict
+    if has_key(self.options, 'onechar')
+        throw 'not_implemented: self.options.onechar is not implemented'
+    else
+        " TODO option to decide if self.options.default
+        " is passed to arg 2 of input().
+        return [input(self.msg), 1]
+    endif
 endfunc
 " }}}
 
@@ -563,16 +592,16 @@ func! s:Prompt.validate_options() dict
     for k in keys(self.options)
         call s:debugmsgf("k = %s, v = %s", string(k), string(self.options[k]))
 
-        if !self.opt_info.has(k)
-            throw 'unknown_option'
+        if !self.opt_info.exists(k)
+            throw 'unknown_option:'.k
         else
             let got = self.opt_info.get(k)
             if has_key(got, 'expand_to') && !has_key(got, 'remain_myself')
-                throw 'all_options_must_be_expanded'
+                throw 'all_options_must_be_expanded:'.k
             endif
         endif
         if !self.__validate(self.opt_info.get(k).arg_type, self.options[k])
-            throw printf('invalid_type: {%s:%s}', string(k), string(self.options[k]))
+            throw printf('invalid_type:{%s:%s}', string(k), string(self.options[k]))
         endif
     endfor
 endfunc
