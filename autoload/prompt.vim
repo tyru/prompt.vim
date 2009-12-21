@@ -99,13 +99,13 @@ func! s:gen_seq_str(seq, idx)
         return a:seq[quot - 1] . s:gen_seq_str(a:seq, div - 1)
     endif
 endfunc
-func! s:generate_alpha(idx)
+func! s:generate_alpha(idx, key)
     return s:gen_seq_str("abcdefghijklmnopqrstuvwxyz", a:idx)
 endfunc
-func! s:generate_asdf(idx)
+func! s:generate_asdf(idx, key)
     return s:gen_seq_str("asdfghjkl;", a:idx)
 endfunc
-func! s:generate_num(idx)
+func! s:generate_num(idx, key)
     return a:idx + 1
 endfunc
 " }}}
@@ -473,12 +473,12 @@ func! s:Prompt.dispatch() dict
 endfunc
 " }}}
 " s:Prompt.run_menu {{{
-" TODO When a:list is dictionary.
+"   TODO nested a:list
 func! s:Prompt.run_menu(list) dict
     " Make displaying list.
     let choice = {}
     for idx in range(0, len(a:list) - 1)
-        let key = self.options.menuidfunc(idx) . ""
+        let key = self.options.menuidfunc(idx, '') . ""
         let choice[key] = a:list[idx]
     endfor
 
@@ -495,7 +495,7 @@ func! s:Prompt.run_menu(list) dict
         let input = self.get_input()
         call s:debugmsg(input)
 
-        if input == ''
+        if input == '' && has_key(self.options, 'default')
             return self.options.default
         elseif has_key(choice, input)
             if s:is_dict(choice[input]) || s:is_list(choice[input])
@@ -574,7 +574,6 @@ func! s:Prompt.add_default_options() dict
     return extend(self.options, self.opt_info.expand(
     \   {
     \      'speed': '0.075',
-    \      'default': '',
     \      'menualpha': 1,
     \      'menutype': 'allcmdline',
     \      'sortby': function('<SID>sortfn_string'),
