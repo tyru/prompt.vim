@@ -6,7 +6,7 @@ scriptencoding utf-8
 " Name: prompt.vim
 " Version: 0.0.0
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2009-12-22.
+" Last Change: 2009-12-23.
 "
 " Description:
 "   Prompt with Vimperator-like keybind.
@@ -212,8 +212,6 @@ endfunc
 
 
 " Objects.
-" FIXME Do not derive from any classes.
-" Just create s:Prompt object.
 " s:Object {{{
 let s:Object = {}
 
