@@ -624,9 +624,17 @@ endfunc
 
 
 " prompt#prompt() {{{
-func! prompt#prompt(msg, options)
+func! prompt#prompt(msg, ...)
+    if a:0 == 0
+        let options = {}
+    elseif a:0 == 1 && type(a:1) == type({})
+        let options = a:1
+    else
+        throw "prompt() can receive only 1 dictionary arg."
+    endif
+
     call s:Prompt.set_msg(a:msg)
-    call s:Prompt.set_options(a:options)
+    call s:Prompt.set_options(options)
     return s:Prompt.run()
 endfunc
 " }}}
