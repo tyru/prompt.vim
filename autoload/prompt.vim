@@ -235,6 +235,13 @@ let s:OptionManager = s:Object.clone()
 
 " s:OptionManager.init {{{
 func! s:OptionManager.init() dict
+    " TODO
+    " - speed
+    " - newline
+    " - require
+    " - until
+    " - while
+    " - line
     let self.opt_info_all = {
     \   'speed': {'arg_type': 'num'},
     \   'echo': {'arg_type': 'str'},
