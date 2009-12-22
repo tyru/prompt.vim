@@ -41,13 +41,15 @@ func! s:no_validate(val)
     return 1
 endfunc
 func! s:is_int(val)
-    return a:val =~# '^'.'0\+'.'$'
-    \   || str2float(a:val) != 0
+    return type(a:val) == type(0)
+    \   || (type(a:val) == type("")
+    \      && a:val =~# '^'.'\d\+'.'$')
 endfunc
 func! s:is_num(val)
     return s:is_int(a:val)
-    \   || a:val =~# '^'.'0\+'.'\.'.'0\+'.'$'
-    \   || str2float(a:val) != 0
+    \   || type(a:val) == type(0.0)
+    \   || (type(a:val) == type("")
+    \       && a:val =~# '^'.'\d\+'.'\.'.'\d\+'.'$')
 endfunc
 func! s:is_str(val)
     return type(a:val) == type("")
@@ -462,8 +464,15 @@ func! s:Prompt.dispatch() dict
             let self.options.escape = 1
             return self.run_menu(self.options.menu)
         else
-            echo self.msg
-            return self.get_input()
+            while 1
+                echo self.msg
+                let input = self.get_input()
+                " NOTE: Check only here.
+                " Because it is not necessary for 'yesno' and 'menu'.
+                if self.check_input(input)
+                    return input
+                endif
+            endwhile
         endif
     catch /^pressed_esc$/
         return "\e"
@@ -555,6 +564,17 @@ func! s:Prompt.get_input() dict
         let input .= c
     endwhile
     return input
+endfunc
+" }}}
+" s:Prompt.check_input {{{
+func! s:Prompt.check_input(input)
+    if has_key(self.options, 'integer') && self.options.integer
+        return s:is_int(a:input)
+    elseif has_key(self.options, 'number') && self.options.number
+        return s:is_num(a:input)
+    else
+        return 1
+    endif
 endfunc
 " }}}
 " s:Prompt.sort_menu_ids {{{
