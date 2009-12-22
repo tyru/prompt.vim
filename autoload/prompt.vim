@@ -480,35 +480,47 @@ func! s:Prompt.dispatch() dict
 endfunc
 " }}}
 " s:Prompt.run_menu {{{
-"   TODO nested a:list
 func! s:Prompt.run_menu(list) dict
     " Make displaying list.
     let choice = {}
-    for idx in range(0, len(a:list) - 1)
-        let key = self.options.menuidfunc(idx, '') . ""
-        let choice[key] = a:list[idx]
-    endfor
+    if type(a:list) == type({})
+        let i = 0
+        for key in keys(a:list)
+            let id = self.options.menuidfunc(i, key) . ""
+            let choice[id] = {'show_value': key, 'dict_value': a:list[key]}
+            let i += 1
+        endfor
+    elseif type(a:list) == type([])
+        for idx in range(0, len(a:list) - 1)
+            let id = self.options.menuidfunc(idx, '') . ""
+            let choice[id] = {'show_value': a:list[idx]}
+        endfor
+    else
+        throw "internal_error: "
+        \    ."'menu' allows only List or Dictionary."
+    endif
+    call s:debugmsg('choice = '.string(choice))
 
     " Show candidates.
     echo self.msg
-    call s:debugmsg('choice = '.string(choice))
     for k in self.sort_menu_ids(keys(choice))
-        echon printf("\n%s. %s", k, choice[k])
+        echon printf("\n%s. %s", k, choice[k].show_value)
     endfor
-    call s:debugmsg('choice = '.string(choice))
 
     while 1
         echon "\n" g:prompt_prompt
         let input = self.get_input()
-        call s:debugmsg(input)
+        call s:debugmsg('input = '.input)
 
         if input == '' && has_key(self.options, 'default')
             return self.options.default
         elseif has_key(choice, input)
-            if s:is_dict(choice[input]) || s:is_list(choice[input])
-                return self.run_menu(choice[input])
+            let value = get(choice[input], 'dict_value', choice[input].show_value)
+            if s:is_dict(value) || s:is_list(value)
+                return self.run_menu(value)
             else
-                return choice[input]
+                " Return result.
+                return value
             endif
         else
             call s:bad_choice('bad choice.')
