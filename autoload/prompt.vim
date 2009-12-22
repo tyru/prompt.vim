@@ -237,7 +237,6 @@ let s:OptionManager = s:Object.clone()
 func! s:OptionManager.init() dict
     " TODO
     " - speed
-    " - newline
     " - require
     " - until
     " - while
@@ -566,6 +565,9 @@ func! s:Prompt.get_input() dict
             return c
         endif
         if c ==# "\<CR>"
+            if has_key(self.options, 'newline')
+                echon self.options.newline
+            endif
             break
         endif
 
