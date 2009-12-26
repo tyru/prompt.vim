@@ -74,7 +74,7 @@ endfunc
 func! s:is_menutype(val)
     " TODO
     return a:val =~#
-    \       '^'.'\(cmdline\|buffer\|dialog\)'.'$'
+    \       '^'.'\(cmdline\|buffer\|allbuffer\|dialog\)'.'$'
 endfunc
 " }}}
 " Sort functions {{{
