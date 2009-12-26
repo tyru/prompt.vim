@@ -6,7 +6,7 @@ scriptencoding utf-8
 " Name: prompt.vim
 " Version: 0.0.0
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2009-12-23.
+" Last Change: 2009-12-26.
 "
 " Description:
 "   Prompt with Vimperator-like keybind.
@@ -74,8 +74,7 @@ endfunc
 func! s:is_menutype(val)
     " TODO
     return a:val =~#
-    \       '^'.'\(allcmdline\|cmdline\|'.
-    \       'buffer\|allbuffer\|dialog\)'.'$'
+    \       '^'.'\(cmdline\|buffer\|dialog\)'.'$'
 endfunc
 " }}}
 " Sort functions {{{
@@ -610,7 +609,7 @@ func! s:Prompt.add_default_options() dict
     \   {
     \      'speed': '0.075',
     \      'menualpha': 1,
-    \      'menutype': 'allcmdline',
+    \      'menutype': 'cmdline',
     \      'sortby': function('<SID>sortfn_string'),
     \   },
     \   'force'),
