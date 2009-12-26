@@ -205,11 +205,6 @@ func! s:bad_choice(msg)
     sleep 1
 endfunc
 " }}}
-" s:getc {{{
-func! s:getc(...)
-    return nr2char(call('getchar', a:000))
-endfunc
-" }}}
 
 
 " Objects.
@@ -475,8 +470,8 @@ func! s:Prompt.dispatch() dict
                 endif
             endwhile
         endif
-    catch /^pressed_esc$/
-        return "\e"
+    catch /^pressed_esc_with:/
+        return substitute(v:exception, '^pressed_esc_with:', '', '')."\e"
     endtry
 endfunc
 " }}}
@@ -556,30 +551,44 @@ func! s:Prompt.get_input() dict
     \   && self.options.onechar
 
     while 1
-        let c = s:getc()
-        if opt_escape && c ==# "\<Esc>"
-            throw 'pressed_esc'
-        endif
+        let c = getchar()
+        let c = type(c) == type(0) ? nr2char(c) : c
         if opt_onechar
             return c
+        endif
+
+        if opt_escape && c ==# "\<Esc>"
+            throw 'pressed_esc_with:'.input
         endif
         if c ==# "\<CR>"
             if has_key(self.options, 'newline')
                 echon self.options.newline
             endif
-            break
+            return input
+        endif
+        if c == "\<BS>"
+            " Dispose "\<BS>" and one char.
+            let input = strpart(input, 0, strlen(input) - 1)
+            " Redraw current input.
+            if has_key(self.options, 'echo')
+                echo repeat(self.options.echo, strlen(input))
+            else
+                echo input
+            endif
+
+            continue
         endif
 
         if has_key(self.options, 'echo')
             echon self.options.echo
         else
-            " TODO Backspace
             echon c
         endif
 
         let input .= c
     endwhile
-    return input
+
+    throw 'internal_error: this block will never be reached'
 endfunc
 " }}}
 " s:Prompt.check_input {{{
