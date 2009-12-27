@@ -445,7 +445,12 @@ func! s:Prompt.run() dict
     call s:debugmsg('options = ' . string(self.options))
 
 
-    let value = self.dispatch()
+    try
+        let value = self.dispatch()
+    catch /^pressed_esc_with:/
+        return substitute(v:exception, '^pressed_esc_with:', '', '')."\e"
+    endtry
+
     if has_key(self.options, 'execute') && !empty(value)
         redraw
         execute printf(self.options.execute, value)
@@ -462,21 +467,17 @@ func! s:Prompt.dispatch() dict
     \   : get(self.options, 'YESNO', 0) ? 'YESNO'
     \   : ''
 
-    try
-        if yesno_type != ''
-            call s:debugmsg('run_yesno()')
-            return self.run_yesno(yesno_type)
-        elseif has_key(self.options, 'menu')
-            call s:debugmsg('run_menu()')
-            let self.options.escape = 1
-            return self.run_menu(self.options.menu)
-        else
-            call s:debugmsg('run_other()')
-            return self.run_other()
-        endif
-    catch /^pressed_esc_with:/
-        return substitute(v:exception, '^pressed_esc_with:', '', '')."\e"
-    endtry
+    if yesno_type != ''
+        call s:debugmsg('run_yesno()')
+        return self.run_yesno(yesno_type)
+    elseif has_key(self.options, 'menu')
+        call s:debugmsg('run_menu()')
+        let self.options.escape = 1
+        return self.run_menu(self.options.menu)
+    else
+        call s:debugmsg('run_other()')
+        return self.run_other()
+    endif
 endfunc
 " }}}
 " s:Prompt.run_menu {{{
