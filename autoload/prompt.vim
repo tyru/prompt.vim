@@ -447,10 +447,10 @@ endfunc
 " s:Prompt.dispatch {{{
 func! s:Prompt.dispatch() dict
     let yesno_type =
-    \   has_key(self.options, 'yes') ? 'yes'
-    \   : has_key(self.options, 'yesno') ? 'yesno'
-    \   : has_key(self.options, 'YES') ? 'YES'
-    \   : has_key(self.options, 'YESNO') ? 'YESNO'
+    \   get(self.options, 'yes', 0)     ? 'yes'
+    \   : get(self.options, 'yesno', 0) ? 'yesno'
+    \   : get(self.options, 'YES', 0)   ? 'YES'
+    \   : get(self.options, 'YESNO', 0) ? 'YESNO'
     \   : ''
 
     try
