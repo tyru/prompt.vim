@@ -309,9 +309,9 @@ func! s:OptionManager.init() dict
     \   'd': 'default',
     \   'r': 'require',
     \   'u': 'until',
-    \   'failif': 'until',
+    \   'okayif': 'until',
     \   'w': 'while',
-    \   'okayif': 'while',
+    \   'failif': 'while',
     \   'm': 'menu',
     \   '1': 'onechar',
     \   'x': 'escape',
@@ -662,6 +662,10 @@ func! s:Prompt.check_input(input)
         return s:is_int(a:input)
     elseif get(self.options, 'number', 0)
         return s:is_num(a:input)
+    elseif has_key(self.options, 'while')
+        return a:input !~# self.options.while
+    elseif has_key(self.options, 'until')
+        return a:input =~# self.options.until
     else
         return 1
     endif
