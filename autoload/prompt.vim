@@ -234,7 +234,6 @@ func! s:OptionManager.init() dict
     " - require
     " - until
     " - while
-    " - line
     let self.opt_info_all = {
     \   'speed': {'arg_type': 'num'},
     \   'echo': {'arg_type': 'str'},
@@ -571,7 +570,7 @@ func! s:Prompt.get_input() dict
             if has_key(self.options, 'newline')
                 echon self.options.newline
             endif
-            return input
+            return get(self.options, 'line', 0) ? input."\n" : input
         endif
         if c == "\<BS>"
             " Dispose "\<BS>" and one char.
