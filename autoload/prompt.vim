@@ -14,10 +14,6 @@ scriptencoding utf-8
 " Change Log: {{{
 " }}}
 " Usage: {{{
-"   Commands: {{{
-"   }}}
-"   Mappings: {{{
-"   }}}
 "   Global Variables: {{{
 "   }}}
 " }}}
@@ -97,20 +93,6 @@ func! s:sortfn_number(i1, i2)
 endfunc
 " }}}
 " Candidates generator functions {{{
-"   len(a:seq) must NOT be 0, maybe.
-func! prompt#gen_seq_str(seq, idx)
-    let div  = (a:idx + 1) / len(a:seq)
-    let quot = (a:idx + 1) % len(a:seq)
-    if div < 1 || (div == 1 && quot == 0)
-        if quot == 0
-            " NOTE: "abc"[-1] is ''. [1,2,3][-1] is 3, though...
-            let quot = len(a:seq)
-        endif
-        return a:seq[quot - 1]
-    else
-        return a:seq[quot - 1] . prompt#gen_seq_str(a:seq, div - 1)
-    endif
-endfunc
 func! s:generate_alpha(idx, key)
     return prompt#gen_seq_str("abcdefghijklmnopqrstuvwxyz", a:idx)
 endfunc
@@ -734,7 +716,24 @@ endfunc
 " }}}
 
 
-" prompt#prompt() {{{
+" Autoload functions.
+" prompt#gen_seq_str {{{
+"   len(a:seq) must NOT be 0, maybe.
+func! prompt#gen_seq_str(seq, idx)
+    let div  = (a:idx + 1) / len(a:seq)
+    let quot = (a:idx + 1) % len(a:seq)
+    if div < 1 || (div == 1 && quot == 0)
+        if quot == 0
+            " NOTE: "abc"[-1] is ''. [1,2,3][-1] is 3, though...
+            let quot = len(a:seq)
+        endif
+        return a:seq[quot - 1]
+    else
+        return a:seq[quot - 1] . prompt#gen_seq_str(a:seq, div - 1)
+    endif
+endfunc
+" }}}
+" prompt#prompt {{{
 func! prompt#prompt(msg, ...)
     if a:0 == 0
         let options = {}
@@ -749,10 +748,6 @@ func! prompt#prompt(msg, ...)
     return s:Prompt.run()
 endfunc
 " }}}
-" }}}
-
-" Commands {{{
-" TODO
 " }}}
 
 " Restore 'cpoptions' {{{
