@@ -584,12 +584,15 @@ func! s:Prompt.get_input(prompt, ...) dict
         let c = getchar()
         let c = type(c) == type(0) ? nr2char(c) : c
         if c ==# "\<CR>"
-            if has_key(self.options, 'newline')
-                echon self.options.newline
-            endif
-            if get(self.options, 'line', 0)
+            echon get(self.options, 'newline', "\n")
+
+            if input == '' && has_default
+                let input = a:1
+            elseif get(self.options, 'line', 0)
+                " NOTE: 'line' is exclusive. (elseif)
                 let input .= "\n"
             endif
+
             if opt_onechar
                 " NOTE: Return one character anyway if opt_onechar.
                 let input = strpart(input, 0, 1)
