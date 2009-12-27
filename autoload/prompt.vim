@@ -583,18 +583,21 @@ func! s:Prompt.get_input(prompt, ...) dict
     while 1
         let c = getchar()
         let c = type(c) == type(0) ? nr2char(c) : c
+        if c ==# "\<CR>"
+            if has_key(self.options, 'newline')
+                echon self.options.newline
+            endif
+            if get(self.options, 'line', 0)
+                let input .= "\n"
+            endif
+            return input
+        endif
         if opt_onechar
             return c
         endif
 
         if opt_escape && c ==# "\<Esc>"
             throw 'pressed_esc_with:'.input
-        endif
-        if c ==# "\<CR>"
-            if has_key(self.options, 'newline')
-                echon self.options.newline
-            endif
-            return get(self.options, 'line', 0) ? input."\n" : input
         endif
         if c == "\<BS>"
             " Dispose "\<BS>" and one char.
