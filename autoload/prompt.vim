@@ -6,7 +6,7 @@ scriptencoding utf-8
 " Name: prompt.vim
 " Version: 0.0.0
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2009-12-26.
+" Last Change: 2009-12-27.
 "
 " Description:
 "   Prompt with Vimperator-like keybind.
@@ -461,6 +461,7 @@ func! s:Prompt.dispatch() dict
             return self.run_menu(self.options.menu)
         else
             while 1
+                " XXX Why not use `:echon`?
                 echo self.msg
                 let input = self.get_input()
                 " NOTE: Check only here.
@@ -526,15 +527,17 @@ func! s:Prompt.run_menu(list) dict
 endfunc
 " }}}
 " s:Prompt.run_yesno {{{
-func! s:Prompt.run_yesno(opt) dict
+func! s:Prompt.run_yesno(yn_type) dict
     while 1
+        echon self.msg
+
         let input = self.get_input()
         call s:debugmsg(input)
 
-        if input =~# s:YESNO_PAT[a:opt]
+        if input =~# s:YESNO_PAT[a:yn_type]
             return input
         else
-            call s:bad_choice(s:YESNO_ERR_MSG[a:opt])
+            call s:bad_choice(s:YESNO_ERR_MSG[a:yn_type])
         endif
     endwhile
 endfunc
