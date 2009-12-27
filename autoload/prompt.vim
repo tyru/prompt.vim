@@ -495,8 +495,8 @@ func! s:Prompt.run_menu(list) dict
     endfor
 
     while 1
-        echon "\n" g:prompt_prompt
-        let input = self.get_input()
+        echon "\n"
+        let input = self.get_input(g:prompt_prompt)
         call s:debugmsg('input = '.input)
 
         if input == '' && has_key(self.options, 'default')
@@ -519,9 +519,7 @@ endfunc
 " s:Prompt.run_yesno {{{
 func! s:Prompt.run_yesno(yn_type) dict
     while 1
-        echon self.msg
-
-        let input = self.get_input()
+        let input = self.get_input(self.msg)
         call s:debugmsg(input)
 
         if input =~# s:YESNO_PAT[a:yn_type]
@@ -535,8 +533,7 @@ endfunc
 " s:Prompt.run_other {{{
 func! s:Prompt.run_other() dict
     while 1
-        echon self.msg
-        let input = self.get_input()
+        let input = self.get_input(self.msg)
         " NOTE: Check only here.
         " Because it is not necessary for 'yesno' and 'menu'.
         if self.check_input(input)
@@ -547,7 +544,7 @@ endfunc
 " }}}
 
 " s:Prompt.get_input {{{
-func! s:Prompt.get_input() dict
+func! s:Prompt.get_input(prompt) dict
     let input = ''
     let opt_escape =
     \   has_key(self.options, 'escape')
@@ -555,6 +552,8 @@ func! s:Prompt.get_input() dict
     let opt_onechar =
     \   has_key(self.options, 'onechar')
     \   && self.options.onechar
+
+    echon a:prompt
 
     while 1
         let c = getchar()
@@ -575,12 +574,19 @@ func! s:Prompt.get_input() dict
         if c == "\<BS>"
             " Dispose "\<BS>" and one char.
             let input = strpart(input, 0, strlen(input) - 1)
-            " Redraw current input.
+
             if has_key(self.options, 'echo')
-                echo repeat(self.options.echo, strlen(input))
+                let sp  = repeat(' ', strlen(self.options.echo))
+                let msg = repeat(self.options.echo, strlen(input))
             else
-                echo input
+                let sp  = ' '
+                let msg = input
             endif
+
+            " Clear rest of input.
+            echon sp . "\<CR>"
+            " Overwrite current input.
+            echon a:prompt . msg
 
             continue
         endif
