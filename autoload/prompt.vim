@@ -21,6 +21,20 @@ scriptencoding utf-8
 "   Global Variables: {{{
 "   }}}
 " }}}
+"
+"
+" TODO: {{{
+" - support migemo.
+" - support FuzzyFinder.vim like interface.
+" - treat EOF(C-d) as "\<CR>" when input is empty string.
+" - :redraw menu's list when too many bad choices.
+" - make s:gen_seq_str() autoload function.
+" -- let user define own generator function.
+" - incremental filtering about menu's list
+" -- currently I don't think run_menu() shows many such list.
+" -- IO::Prompt also warns like "Too many -menu items ..."
+"    if -menu's list is greater than 26.
+" }}}
 "==================================================
 " }}}
 
@@ -72,7 +86,6 @@ func! s:is_callable(val)
 endfunc
 
 func! s:is_menutype(val)
-    " TODO
     return a:val =~#
     \       '^'.'\(cmdline\|buffer\|allbuffer\|dialog\)'.'$'
 endfunc
@@ -229,6 +242,7 @@ func! s:OptionManager.init() dict
     " - require
     " - until
     " - while
+    " - menutype
     let self.opt_info_all = {
     \   'speed': {'arg_type': 'num'},
     \   'echo': {'arg_type': 'str'},
@@ -369,7 +383,7 @@ func! s:OptionManager.filter_alias(options, extend_opt) dict
 endfunc
 " }}}
 " s:OptionManager.expand {{{
-"   expand options if it has 'expand_to'.
+"   expand abbrev options if it has 'expand_to'.
 func! s:OptionManager.expand(options, extend_opt) dict
     let ret = {}
     for k in keys(a:options)
@@ -566,6 +580,8 @@ func! s:Prompt.get_input(prompt, ...) dict
     \   get(self.options, 'onechar', 0)
     \   && self.options.onechar
 
+    " TODO Global variable to decide
+    " if Vim echoes option 'default' value.
     if has_default
         if a:prompt =~# ':$'
             let pr = printf('%s [%s]:',
@@ -620,6 +636,7 @@ func! s:Prompt.get_input(prompt, ...) dict
             endif
 
             " Clear rest of input.
+            " (Overwrite deleted one character with spaces)
             echon sp . "\<CR>"
             " Overwrite current input.
             echon pr . msg
