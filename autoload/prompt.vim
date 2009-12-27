@@ -590,6 +590,10 @@ func! s:Prompt.get_input(prompt, ...) dict
             if get(self.options, 'line', 0)
                 let input .= "\n"
             endif
+            if opt_onechar
+                " NOTE: Return one character anyway if opt_onechar.
+                let input = strpart(input, 0, 1)
+            endif
             return input
         endif
         if opt_onechar
