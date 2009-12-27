@@ -107,26 +107,6 @@ endfunc
 
 " Scope Variables {{{
 let s:debug_errmsg = []
-let s:validate_fn = {
-\   'str': function('<SID>no_validate'),
-\   'int': function('<SID>is_int'),
-\   'num': function('<SID>is_num'),
-\   'bool': function('<SID>no_validate'),
-\   'dict': function('<SID>is_dict'),
-\   'list': function('<SID>is_list'),
-\   'fn': function('<SID>is_function'),
-\}
-
-let s:YESNO_PAT = {
-\   'yes': '[\w\W]*',
-\   'yesno': '^\s*[yYnN]',
-\   'YES': '[\w\W]*',
-\   'YESNO': '^\s*[YN]',
-\}
-let s:YESNO_ERR_MSG = {
-\   'yesno': "Please answer 'y' or 'n'",
-\   'YESNO': "Please answer 'Y' or 'N'",
-\}
 " }}}
 " Global Variables {{{
 if !exists('g:prompt_debug')
@@ -134,9 +114,6 @@ if !exists('g:prompt_debug')
 endif
 if !exists('g:prompt_prompt')
     let g:prompt_prompt = '> '
-endif
-if !exists('g:prompt_menu_display_once')
-    let g:prompt_menu_display_once = 0
 endif
 " }}}
 
@@ -391,6 +368,28 @@ let s:Prompt = s:Object.clone()
 " s:Prompt.init {{{
 func! s:Prompt.init(option_manager) dict
     let self.opt_info = a:option_manager
+
+    let self.validate_fn = {
+    \   'str': function('<SID>no_validate'),
+    \   'int': function('<SID>is_int'),
+    \   'num': function('<SID>is_num'),
+    \   'bool': function('<SID>no_validate'),
+    \   'dict': function('<SID>is_dict'),
+    \   'list': function('<SID>is_list'),
+    \   'fn': function('<SID>is_function'),
+    \}
+
+    let self.YESNO_PAT = {
+    \   'yes': '[\w\W]*',
+    \   'yesno': '^\s*[yYnN]',
+    \   'YES': '[\w\W]*',
+    \   'YESNO': '^\s*[YN]',
+    \}
+
+    let self.YESNO_ERR_MSG = {
+    \   'yesno': "Please answer 'y' or 'n'",
+    \   'YESNO': "Please answer 'Y' or 'N'",
+    \}
 endfunc
 " }}}
 call s:Prompt.init(s:OptionManager)
@@ -514,10 +513,10 @@ func! s:Prompt.run_yesno(yn_type) dict
         let input = self.get_input(self.msg)
         call s:debugmsg(input)
 
-        if input =~# s:YESNO_PAT[a:yn_type]
+        if input =~# self.YESNO_PAT[a:yn_type]
             return input
         else
-            call s:bad_choice(s:YESNO_ERR_MSG[a:yn_type])
+            call s:bad_choice(self.YESNO_ERR_MSG[a:yn_type])
         endif
     endwhile
 endfunc
@@ -699,7 +698,7 @@ func! s:Prompt.__validate(opt_name, opt_val) dict
             let fn_str = substitute(a:opt_name, '^custom:', '', '')
             return eval(fn_str)(a:opt_val)
         else
-            return s:validate_fn[a:opt_name](a:opt_val)
+            return self.validate_fn[a:opt_name](a:opt_val)
         endif
     elseif s:is_list(a:opt_name)
         if len(a:opt_name) == 1
