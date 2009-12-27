@@ -28,8 +28,6 @@ scriptencoding utf-8
 " - support FuzzyFinder.vim like interface.
 " - treat EOF(C-d) as "\<CR>" when input is empty string.
 " - :redraw menu's list when too many bad choices.
-" - make s:gen_seq_str() autoload function.
-" -- let user define own generator function.
 " - incremental filtering about menu's list
 " -- currently I don't think run_menu() shows many such list.
 " -- IO::Prompt also warns like "Too many -menu items ..."
@@ -100,7 +98,7 @@ endfunc
 " }}}
 " Candidates generator functions {{{
 "   len(a:seq) must NOT be 0, maybe.
-func! s:gen_seq_str(seq, idx)
+func! prompt#gen_seq_str(seq, idx)
     let div  = (a:idx + 1) / len(a:seq)
     let quot = (a:idx + 1) % len(a:seq)
     if div < 1 || (div == 1 && quot == 0)
@@ -110,14 +108,14 @@ func! s:gen_seq_str(seq, idx)
         endif
         return a:seq[quot - 1]
     else
-        return a:seq[quot - 1] . s:gen_seq_str(a:seq, div - 1)
+        return a:seq[quot - 1] . prompt#gen_seq_str(a:seq, div - 1)
     endif
 endfunc
 func! s:generate_alpha(idx, key)
-    return s:gen_seq_str("abcdefghijklmnopqrstuvwxyz", a:idx)
+    return prompt#gen_seq_str("abcdefghijklmnopqrstuvwxyz", a:idx)
 endfunc
 func! s:generate_asdf(idx, key)
-    return s:gen_seq_str("asdfghjkl;", a:idx)
+    return prompt#gen_seq_str("asdfghjkl;", a:idx)
 endfunc
 func! s:generate_num(idx, key)
     return a:idx + 1
