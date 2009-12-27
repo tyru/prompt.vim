@@ -460,16 +460,7 @@ func! s:Prompt.dispatch() dict
             let self.options.escape = 1
             return self.run_menu(self.options.menu)
         else
-            while 1
-                " XXX Why not use `:echon`?
-                echo self.msg
-                let input = self.get_input()
-                " NOTE: Check only here.
-                " Because it is not necessary for 'yesno' and 'menu'.
-                if self.check_input(input)
-                    return input
-                endif
-            endwhile
+            return self.run_other()
         endif
     catch /^pressed_esc_with:/
         return substitute(v:exception, '^pressed_esc_with:', '', '')."\e"
@@ -538,6 +529,19 @@ func! s:Prompt.run_yesno(yn_type) dict
             return input
         else
             call s:bad_choice(s:YESNO_ERR_MSG[a:yn_type])
+        endif
+    endwhile
+endfunc
+" }}}
+" s:Prompt.run_other {{{
+func! s:Prompt.run_other() dict
+    while 1
+        echon self.msg
+        let input = self.get_input()
+        " NOTE: Check only here.
+        " Because it is not necessary for 'yesno' and 'menu'.
+        if self.check_input(input)
+            return input
         endif
     endwhile
 endfunc
