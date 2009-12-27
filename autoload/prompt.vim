@@ -547,10 +547,10 @@ endfunc
 func! s:Prompt.get_input(prompt) dict
     let input = ''
     let opt_escape =
-    \   has_key(self.options, 'escape')
+    \   get(self.options, 'escape', 0)
     \   && self.options.escape
     let opt_onechar =
-    \   has_key(self.options, 'onechar')
+    \   get(self.options, 'onechar', 0)
     \   && self.options.onechar
 
     echon a:prompt
@@ -605,9 +605,9 @@ endfunc
 " }}}
 " s:Prompt.check_input {{{
 func! s:Prompt.check_input(input)
-    if has_key(self.options, 'integer') && self.options.integer
+    if get(self.options, 'integer', 0)
         return s:is_int(a:input)
-    elseif has_key(self.options, 'number') && self.options.number
+    elseif get(self.options, 'number', 0)
         return s:is_num(a:input)
     else
         return 1
@@ -617,7 +617,7 @@ endfunc
 " s:Prompt.sort_menu_ids {{{
 func! s:Prompt.sort_menu_ids(keys) dict
     let keys = a:keys
-    if has_key(self.options, 'sortmenu') && self.options.sortmenu
+    if get(self.options, 'sortmenu', 0)
         call sort(keys, self.options.sortby)
     endif
     return keys
