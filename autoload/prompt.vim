@@ -600,7 +600,10 @@ func! s:Prompt.get_input(prompt, ...) dict
     while 1
         let c = getchar()
         let c = type(c) == type(0) ? nr2char(c) : c
-        if c ==# "\<CR>"
+
+        if opt_escape && c ==# "\<Esc>"
+            throw 'pressed_esc_with:'.input
+        elseif c ==# "\<CR>"
             echon get(self.options, 'newline', "\n")
 
             if input == '' && has_default
@@ -615,15 +618,7 @@ func! s:Prompt.get_input(prompt, ...) dict
                 let input = strpart(input, 0, 1)
             endif
             return input
-        endif
-        if opt_onechar
-            return c
-        endif
-
-        if opt_escape && c ==# "\<Esc>"
-            throw 'pressed_esc_with:'.input
-        endif
-        if c == "\<BS>"
+        elseif c == "\<BS>"
             " Dispose "\<BS>" and one char.
             let input = strpart(input, 0, strlen(input) - 1)
 
@@ -642,6 +637,9 @@ func! s:Prompt.get_input(prompt, ...) dict
             echon pr . msg
 
             continue
+        endif
+        if opt_onechar
+            return c
         endif
 
         if has_key(self.options, 'echo')
