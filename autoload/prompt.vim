@@ -568,17 +568,18 @@ func! s:Prompt.get_input(prompt, ...) dict
 
     if has_default
         if a:prompt =~# ':$'
-            echon printf('%s [%s]:',
+            let pr = printf('%s [%s]:',
             \     strpart(a:prompt, 0, strlen(a:prompt) - 1),
             \     a:1)
         else
-            echon printf('%s [%s]',
+            let pr = printf('%s [%s]',
             \     a:prompt,
             \     a:1)
         endif
     else
-        echon a:prompt
+        let pr = a:prompt
     endif
+    echon pr
 
     while 1
         let c = getchar()
@@ -621,7 +622,7 @@ func! s:Prompt.get_input(prompt, ...) dict
             " Clear rest of input.
             echon sp . "\<CR>"
             " Overwrite current input.
-            echon a:prompt . msg
+            echon pr . msg
 
             continue
         endif
