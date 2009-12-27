@@ -558,10 +558,6 @@ func! s:Prompt.run_other() dict
 
     while 1
         let input = call(self.get_input, args, self)
-
-        if input == '' && has_key(self.options, 'default')
-            let input = self.options.default
-        endif
         if self.check_input(input)
             return input
         endif
