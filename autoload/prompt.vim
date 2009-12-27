@@ -134,7 +134,7 @@ let s:validate_fn = {
 \   'bool': function('<SID>no_validate'),
 \   'dict': function('<SID>is_dict'),
 \   'list': function('<SID>is_list'),
-\   'function': function('<SID>is_function'),
+\   'fn': function('<SID>is_function'),
 \}
 
 let s:YESNO_PAT = {
@@ -267,7 +267,7 @@ func! s:OptionManager.init() dict
     \   'integer': {'arg_type': 'bool'},
     \
     \   'execute': {'arg_type': 'str'},
-    \   'menuidfunc': {'arg_type': 'function'},
+    \   'menuidfunc': {'arg_type': 'fn'},
     \   'menualpha': {
     \       'arg_type': 'bool',
     \       'expand_to': {
@@ -298,7 +298,7 @@ func! s:OptionManager.init() dict
     \       'arg_type': 'bool',
     \   },
     \   'sortby': {
-    \       'arg_type': 'function',
+    \       'arg_type': 'fn',
     \   },
     \}
 
