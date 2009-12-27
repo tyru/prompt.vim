@@ -28,6 +28,9 @@ scriptencoding utf-8
 " -- currently I don't think run_menu() shows many such list.
 " -- IO::Prompt also warns like "Too many -menu items ..."
 "    if -menu's list is greater than 26.
+" - echo warning at current line.
+" - iPod touch/iPhone like password input interface.
+" -- show only last character for a while.
 " }}}
 "==================================================
 " }}}
