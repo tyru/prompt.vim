@@ -218,11 +218,6 @@ endfunc
 func! s:Object.clone() dict
     return deepcopy(self)
 endfunc
-
-func! s:Object.call(Fn, args) dict
-    return call(a:Fn, a:args, self)
-endfunc
-let s:Object.apply = s:Object.call
 " }}}
 " s:OptionManager {{{
 let s:OptionManager = s:Object.clone()
@@ -339,8 +334,9 @@ endfunc
 " s:OptionManager.get {{{
 func! s:OptionManager.get(name, ...) dict
     if self.is_alias(a:name)
-        return self.apply('s:OptionManager.get',
-        \       [self.opt_alias[a:name]] + a:000)
+        return call(self.get,
+        \       [self.opt_alias[a:name]] + a:000,
+        \       self)
     endif
     if !self.exists(a:name)
         if a:0 == 0
@@ -454,11 +450,14 @@ func! s:Prompt.dispatch() dict
 
     try
         if yesno_type != ''
+            call s:debugmsg('run_yesno()')
             return self.run_yesno(yesno_type)
         elseif has_key(self.options, 'menu')
+            call s:debugmsg('run_menu()')
             let self.options.escape = 1
             return self.run_menu(self.options.menu)
         else
+            call s:debugmsg('run_other()')
             return self.run_other()
         endif
     catch /^pressed_esc_with:/
@@ -537,9 +536,13 @@ func! s:Prompt.run_other() dict
     " - Replace input with self.options.default
     "   if input is empty string.
     " - Check input. (self.check_input(input))
+    let args =
+    \   has_key(self.options, 'default') ?
+    \       [self.msg, self.options.default]
+    \       : [self.msg]
 
     while 1
-        let input = self.get_input(self.msg)
+        let input = call(self.get_input, args, self)
 
         if input == '' && has_key(self.options, 'default')
             let input = self.options.default
@@ -552,8 +555,10 @@ endfunc
 " }}}
 
 " s:Prompt.get_input {{{
-func! s:Prompt.get_input(prompt) dict
+func! s:Prompt.get_input(prompt, ...) dict
     let input = ''
+    let has_default = a:0 !=# 0
+
     let opt_escape =
     \   get(self.options, 'escape', 0)
     \   && self.options.escape
@@ -561,7 +566,19 @@ func! s:Prompt.get_input(prompt) dict
     \   get(self.options, 'onechar', 0)
     \   && self.options.onechar
 
-    echon a:prompt
+    if has_default
+        if a:prompt =~# ':$'
+            echon printf('%s [%s]:',
+            \     strpart(a:prompt, 0, strlen(a:prompt) - 1),
+            \     a:1)
+        else
+            echon printf('%s [%s]',
+            \     a:prompt,
+            \     a:1)
+        endif
+    else
+        echon a:prompt
+    endif
 
     while 1
         let c = getchar()
