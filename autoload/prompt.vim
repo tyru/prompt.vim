@@ -638,6 +638,10 @@ func! s:Prompt.get_input(prompt, ...) dict
             echon pr . msg
 
             continue
+        " elseif c == "\<C-d>" && input == ''
+        "     " TODO Global variable to allow <C-d>
+        "     " return empty string or "\<C-d>".
+        "     return ''
         endif
         if opt_onechar
             return c
