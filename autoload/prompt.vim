@@ -6,7 +6,7 @@ scriptencoding utf-8
 " Name: prompt.vim
 " Version: 0.0.0
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2009-12-27.
+" Last Change: 2009-12-28.
 "
 " Description:
 "   Prompt with Vimperator-like keybind.
@@ -499,9 +499,7 @@ func! s:Prompt.run_menu(list) dict
         let input = self.get_input(g:prompt_prompt)
         call s:debugmsg('input = '.input)
 
-        if input == '' && has_key(self.options, 'default')
-            return self.options.default
-        elseif has_key(choice, input)
+        if has_key(choice, input)
             let value = get(choice[input], 'dict_value', choice[input].show_value)
             if s:is_dict(value) || s:is_list(value)
                 return self.run_menu(value)
@@ -532,10 +530,20 @@ endfunc
 " }}}
 " s:Prompt.run_other {{{
 func! s:Prompt.run_other() dict
+    " NOTE:
+    " s:Prompt.run_other() has some different points
+    " with other methods like 's:Prompt.run_*()'.
+    "
+    " - Replace input with self.options.default
+    "   if input is empty string.
+    " - Check input. (self.check_input(input))
+
     while 1
         let input = self.get_input(self.msg)
-        " NOTE: Check only here.
-        " Because it is not necessary for 'yesno' and 'menu'.
+
+        if input == '' && has_key(self.options, 'default')
+            let input = self.options.default
+        endif
         if self.check_input(input)
             return input
         endif
