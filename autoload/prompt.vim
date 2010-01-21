@@ -6,7 +6,7 @@ scriptencoding utf-8
 " Name: prompt.vim
 " Version: 0.0.0
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2010-01-04.
+" Last Change: 2010-01-22.
 "
 " Description:
 "   Smart prompt function like IO::Prompt.
@@ -552,12 +552,8 @@ func! s:Prompt.get_input(prompt, ...) dict
     let input = ''
     let has_default = a:0 !=# 0
 
-    let opt_escape =
-    \   get(self.options, 'escape', 0)
-    \   && self.options.escape
-    let opt_onechar =
-    \   get(self.options, 'onechar', 0)
-    \   && self.options.onechar
+    let opt_escape = get(self.options, 'escape', 0)
+    let opt_onechar = get(self.options, 'onechar', 0)
 
     " TODO Global variable to decide
     " if Vim echoes option 'default' value.
