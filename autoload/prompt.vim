@@ -88,11 +88,13 @@ func! s:is_menutype(val)
 endfunc
 " }}}
 " Sort functions {{{
-func! s:sortfn_string(s1, s2)
-    return a:s1 ==# a:s2 ? 0 : a:s1 > a:s2 ? 1 : -1
+func! s:sortfn_string(a, b)
+    let [a, b] = [a:a . '', a:b . '']
+    return a ==# b ? 0 : a > b ? 1 : -1
 endfunc
-func! s:sortfn_number(i1, i2)
-    return a:i1 ==# a:i2 ? 0 : a:i1 > a:i2 ? 1 : -1
+func! s:sortfn_number(a, b)
+    let [a, b] = [a:a + 0, a:b + 0]
+    return a ==# b ? 0 : a > b ? 1 : -1
 endfunc
 " }}}
 " Candidates generator functions {{{
