@@ -6,7 +6,7 @@ scriptencoding utf-8
 " Name: prompt.vim
 " Version: 0.0.0
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2010-01-22.
+" Last Change: 2010-02-08.
 "
 " Description:
 "   Smart prompt function like IO::Prompt.
@@ -35,12 +35,6 @@ scriptencoding utf-8
 "==================================================
 " }}}
 
-" Load Once {{{
-if exists('g:loaded_prompt') && g:loaded_prompt
-    finish
-endif
-let g:loaded_prompt = 1
-" }}}
 " Saving 'cpoptions' {{{
 let s:save_cpo = &cpo
 set cpo&vim
@@ -112,14 +106,6 @@ endfunc
 
 " Scope Variables {{{
 let s:debug_errmsg = []
-" }}}
-" Global Variables {{{
-if !exists('g:prompt_debug')
-    let g:prompt_debug = 0
-endif
-if !exists('g:prompt_prompt')
-    let g:prompt_prompt = '> '
-endif
 " }}}
 
 " Functions {{{
