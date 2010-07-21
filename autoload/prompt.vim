@@ -6,7 +6,7 @@ scriptencoding utf-8
 " Name: prompt.vim
 " Version: 0.0.0
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2010-02-08.
+" Last Change: 2010-07-21.
 "
 " Description:
 "   Smart prompt function like IO::Prompt.
@@ -215,6 +215,7 @@ func! s:OptionManager.init() dict
     \   'integer': {'arg_type': 'bool'},
     \
     \   'execute': {'arg_type': 'str'},
+    \   'executeif': {'arg_type': 'str'},
     \   'menuidfunc': {'arg_type': 'fn'},
     \   'menualpha': {
     \       'arg_type': 'bool',
