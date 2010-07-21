@@ -303,7 +303,7 @@ func! s:OptionManager.get(name, ...) dict
     endif
     if !self.exists(a:name)
         if a:0 == 0
-            throw 'internal_error'
+            throw 'internal_error: s:OptionManager.get(): ' . a:name
         else
             return a:1
         endif
@@ -696,7 +696,7 @@ func! s:Prompt.__validate(opt_name, opt_val) dict
             \   || self.__validate(a:opt_name[1:], a:opt_val)
         endif
     else
-        throw 'internal_error'
+        throw 'internal_error: invalid a:opt_name: ' . a:opt_name
     endif
 endfunc
 " }}}
