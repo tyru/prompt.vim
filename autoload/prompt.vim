@@ -424,7 +424,10 @@ func! s:Prompt.run() dict
 
     if has_key(self.options, 'execute') && !empty(value)
         redraw
-        execute printf(self.options.execute, value)
+        let excmd = self.options.execute
+        let excmd = substitute(excmd, '<value>'.'\C', value, 'g')
+        let excmd = substitute(excmd, '<q-value>'.'\C', string(value), 'g')
+        execute excmd
     endif
     return value
 endfunc
