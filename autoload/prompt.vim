@@ -422,14 +422,29 @@ func! s:Prompt.run() dict
         return substitute(v:exception, '^pressed_esc_with:', '', '')."\e"
     endtry
 
-    if has_key(self.options, 'execute') && !empty(value)
+    if self.can_execute(value)
         redraw
-        let excmd = self.options.execute
-        let excmd = substitute(excmd, '<value>'.'\C', value, 'g')
-        let excmd = substitute(excmd, '<q-value>'.'\C', string(value), 'g')
-        execute excmd
+        execute self.subst_key_notation(self.options.execute, value)
     endif
     return value
+endfunc
+func! s:Prompt.subst_key_notation(expr, value)
+    let expr = a:expr
+    let expr = substitute(expr, '<value>'.'\C', a:value, 'g')
+    let expr = substitute(expr, '<f-value>'.'\C', string(a:value), 'g')
+    return expr
+endfunc
+func! s:Prompt.can_execute(value)
+    try
+        return
+        \   !empty(a:value)
+        \   && has_key(self.options, 'execute')
+        \   && has_key(self.options, 'executeif')
+        \   && eval(self.subst_key_notation(self.options.executeif, a:value))
+    catch
+        call s:debugmsgf('eval() raises exception: v:exception = %s', string(v:exception))
+        return 0
+    endtry
 endfunc
 " }}}
 " s:Prompt.dispatch {{{
