@@ -6,7 +6,7 @@ scriptencoding utf-8
 " Name: prompt.vim
 " Version: 0.0.0
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2010-07-21.
+" Last Change: 2010-07-30.
 "
 " Description:
 "   Smart prompt function like IO::Prompt.
@@ -163,7 +163,6 @@ endfunc
 " s:bad_choice {{{
 func! s:bad_choice(msg)
     call s:warn(a:msg)
-    sleep 1
 endfunc
 " }}}
 
