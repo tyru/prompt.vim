@@ -1,40 +1,6 @@
 " vim:foldmethod=marker:fen:
 scriptencoding utf-8
 
-" Document {{{
-"==================================================
-" Name: prompt.vim
-" Version: 0.0.0
-" Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2010-07-30.
-"
-" Description:
-"   Smart prompt function like IO::Prompt.
-"
-" Change Log: {{{
-" }}}
-" Usage: {{{
-"   Global Variables: {{{
-"   }}}
-" }}}
-"
-"
-" TODO: {{{
-" - support migemo.
-" - support FuzzyFinder.vim like interface.
-" - treat EOF(C-d) as "\<CR>" when input is empty string.
-" - :redraw menu's list when too many bad choices.
-" - incremental filtering about menu's list
-" -- currently I don't think run_menu() shows many such list.
-" -- IO::Prompt also warns like "Too many -menu items ..."
-"    if -menu's list is greater than 26.
-" - echo warning at current line.
-" - iPod touch/iPhone like password input interface.
-" -- show only last character for a while.
-" }}}
-"==================================================
-" }}}
-
 " Saving 'cpoptions' {{{
 let s:save_cpo = &cpo
 set cpo&vim

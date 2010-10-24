@@ -1,0 +1,59 @@
+*prompt.txt* *prompt*
+
+Author:
+  tyru <tyru.exe@gmail.com>
+Version: 0.0.0
+License: Under the same license as Vim itself (see :help license)
+
+==============================================================================
+CONTENTS						*prompt-contents*
+
+Introduction		|prompt-introduction|
+Interface			|prompt-interface|
+  Keymappings		|prompt-keymappings|
+  Variables			|prompt-variables|
+  Commands			|prompt-commands|
+TODO				|prompt-todo|
+Changelog			|prompt-changelog|
+
+
+==============================================================================
+INTRODUCTION						*prompt-introduction* {{{
+}}}
+==============================================================================
+INTERFACE				*prompt-interface* {{{
+------------------------------------------------------------------------------
+KEYMAPPINGS					*prompt-keymappings* {{{
+}}}
+------------------------------------------------------------------------------
+VARIABLES					*prompt-variables* {{{
+}}}
+------------------------------------------------------------------------------
+COMMANDS					*prompt-commands* {{{
+}}}
+}}}
+==============================================================================
+TODO						*prompt-todo* {{{
+
+- support migemo.
+- support FuzzyFinder.vim like interface.
+- treat EOF(C-d) as "\<CR>" when input is empty string.
+- :redraw menu's list when too many bad choices.
+- incremental filtering about menu's list
+-- currently I don't think run_menu() shows many such list.
+-- IO::Prompt also warns like "Too many -menu items ..."
+   if -menu's list is greater than 26.
+- echo warning at current line.
+- iPod touch/iPhone like password input interface.
+-- show only last character for a while.
+
+}}}
+==============================================================================
+CHANGELOG						*prompt-changelog* {{{
+
+0.0.0:
+- Initial upload
+
+}}}
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=4:ft=help:norl:noet:fdm=marker:fen
